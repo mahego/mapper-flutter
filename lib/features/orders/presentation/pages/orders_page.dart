@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -72,10 +73,9 @@ class OrdersPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        DateTime.now()
-                            .subtract(Duration(days: index))
-                            .toString()
-                            .split(' ')[0],
+                        DateFormat.yMMMd().format(
+                          DateTime.now().subtract(Duration(days: index)),
+                        ),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),

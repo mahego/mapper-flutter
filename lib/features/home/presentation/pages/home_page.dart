@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -157,7 +158,7 @@ class _HomeContent extends StatelessWidget {
                     ),
                   ),
                   title: Text('Order #${1000 + index}'),
-                  subtitle: Text('Delivered on ${DateTime.now().subtract(Duration(days: index)).toString().split(' ')[0]}'),
+                  subtitle: Text('Delivered on ${DateFormat.yMMMd().format(DateTime.now().subtract(Duration(days: index)))}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {},
                 ),
