@@ -1,17 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
+import '../constants/app_constants.dart';
 
 class ApiClient {
   final Dio _dio;
   final Logger _logger;
-  
-  // TODO: Move to environment config
-  static const String _baseUrl = 'http://10.0.2.2:3000/api'; // Android Emulator default
 
   ApiClient({Dio? dio, Logger? logger}) 
       : _dio = dio ?? Dio(BaseOptions(
-          baseUrl: _baseUrl,
+          baseUrl: AppConstants.baseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
           headers: {'Content-Type': 'application/json'},
