@@ -8,6 +8,10 @@ class AppTheme {
   static const Color primaryColor = Color(0xFF3B82F6);
   static const Color primaryDark = Color(0xFF1D4ED8); // Blue 700
   static const Color primaryLight = Color(0xFF60A5FA); // Blue 400
+  static const Color primary400 = primaryLight;
+  static const Color primary500 = primaryColor;
+  static const Color primary600 = Color(0xFF2563EB); // Blue 600
+  static const Color accent = primaryColor;
 
   // Slate Scale (Backgrounds & Surfaces)
   static const Color slate950 = Color(0xFF020617); // Main Background
@@ -50,7 +54,7 @@ class AppTheme {
       textTheme: _buildTextTheme(Colors.black87),
       elevatedButtonTheme: _elevatedButtonThemeData,
       inputDecorationTheme: _inputDecorationTheme(Colors.grey[100]!, slate200),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -87,7 +91,7 @@ class AppTheme {
       ),
       textTheme: _buildTextTheme(slate200),
       elevatedButtonTheme: _elevatedButtonThemeData,
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: slate900.withOpacity(0.5), // Glassy look
         shape: RoundedRectangleBorder(
