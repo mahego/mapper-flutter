@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/tropical_scaffold.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -7,9 +8,10 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
+    return TropicalScaffold(
       appBar: AppBar(
         title: const Text('Profile'),
+        backgroundColor: Colors.transparent,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

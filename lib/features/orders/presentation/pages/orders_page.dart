@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/tropical_scaffold.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -8,9 +9,10 @@ class OrdersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    return Scaffold(
+    return TropicalScaffold(
       appBar: AppBar(
         title: const Text('My Orders'),
+        backgroundColor: Colors.transparent,
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

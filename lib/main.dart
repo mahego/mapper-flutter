@@ -16,7 +16,8 @@ class MapperApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      // Forced to dark to match the "Tropical" web style
+      themeMode: ThemeMode.dark, 
       routerConfig: AppRouter.router,
     );
   }

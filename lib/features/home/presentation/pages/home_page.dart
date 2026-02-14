@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/tropical_scaffold.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,9 +15,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return TropicalScaffold(
       appBar: AppBar(
         title: const Text('Mapper'),
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -110,22 +113,22 @@ class _HomeContent extends StatelessWidget {
             ),
             delegate: SliverChildListDelegate([
               _QuickActionCard(
-                icon: Icons.add_shopping_cart,
-                title: 'New Order',
-                color: theme.colorScheme.primary,
-                onTap: () {},
+                icon: Icons.person,
+                title: 'Cliente',
+                color: Colors.blue,
+                onTap: () => context.push('/client/dashboard'),
               ),
               _QuickActionCard(
-                icon: Icons.history,
-                title: 'Order History',
-                color: theme.colorScheme.secondary,
-                onTap: () {},
+                icon: Icons.store,
+                title: 'Tienda',
+                color: Colors.orange,
+                onTap: () => context.push('/store/dashboard'),
               ),
               _QuickActionCard(
-                icon: Icons.location_on,
-                title: 'Track Delivery',
-                color: Colors.green,
-                onTap: () {},
+                icon: Icons.motorcycle,
+                title: 'Repartidor',
+                color: Colors.purple,
+                onTap: () => context.push('/provider/dashboard'),
               ),
               _QuickActionCard(
                 icon: Icons.support_agent,
