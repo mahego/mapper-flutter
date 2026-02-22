@@ -1,10 +1,14 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/store_bottom_nav.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/barcode_scanner_service.dart';
+import '../../../../core/services/firebase_storage_service.dart';
 import '../../domain/repositories/product_repository.dart';
+import '../../domain/repositories/store_repository.dart';
 import '../../domain/entities/store_product.dart';
 import '../widgets/product_card.dart';
 
@@ -18,15 +22,17 @@ class StoreCatalogPage extends StatefulWidget {
 class _StoreCatalogPageState extends State<StoreCatalogPage> {
   final _apiClient = ApiClient();
   late final ProductRepository _productRepository;
-  
+  late final StoreRepository _storeRepository;
+  final _storageService = FirebaseStorageService();
+
   List<StoreProduct> _products = [];
   bool _isLoading = true;
-  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _productRepository = ProductRepository(_apiClient);
+    _storeRepository = StoreRepository(_apiClient);
     _loadProducts();
   }
 
@@ -54,112 +60,215 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
     final priceController = TextEditingController(text: product?.price.toString() ?? '');
     final stockController = TextEditingController(text: product?.stock.toString() ?? '');
     final categoryController = TextEditingController(text: product?.category ?? '');
-    final barcodeController = TextEditingController(text: '');
+    final barcodeController = TextEditingController(text: product?.barcode ?? '');
+
+    XFile? pickedImage;
+    Uint8List? pickedImageBytes;
+
+    void unfocus() => FocusScope.of(context).unfocus();
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(product == null ? 'Nuevo Producto' : 'Editar Producto'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return GestureDetector(
+            onTap: unfocus,
+            behavior: HitTestBehavior.opaque,
+            child: AlertDialog(
+              title: Text(product == null ? 'Nuevo Producto' : 'Editar Producto'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Foto: actual o previsualización; un solo Guardar guarda todo (incl. foto)
+                    Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: pickedImageBytes != null
+                              ? Image.memory(
+                                  pickedImageBytes!,
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(80),
+                                )
+                              : (product?.imageUrl != null && pickedImage == null
+                                  ? Image.network(
+                                      product!.imageUrl!,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => _buildImagePlaceholder(80),
+                                    )
+                                  : _buildImagePlaceholder(80)),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Imagen del producto',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            TextButton.icon(
+                              onPressed: () async {
+                                final picker = ImagePicker();
+                                final x = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  maxWidth: 800,
+                                  imageQuality: 85,
+                                );
+                                if (x != null) {
+                                  final bytes = await x.readAsBytes();
+                                  setDialogState(() {
+                                    pickedImage = x;
+                                    pickedImageBytes = bytes;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.add_photo_alternate, size: 20),
+                              label: const Text('Elegir imagen'),
+                            ),
+                            if (pickedImage != null || product?.imageUrl != null)
+                              TextButton.icon(
+                                onPressed: () => setDialogState(() {
+                                  pickedImage = null;
+                                  pickedImageBytes = null;
+                                }),
+                                icon: const Icon(Icons.clear, size: 18),
+                                label: const Text('Quitar'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => unfocus(),
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => unfocus(),
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: priceController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => unfocus(),
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Precio',
+                        border: OutlineInputBorder(),
+                        prefixText: '\$ ',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: stockController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => unfocus(),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Stock',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: categoryController,
+                      textInputAction: TextInputAction.next,
+                      onSubmitted: (_) => unfocus(),
+                      decoration: const InputDecoration(
+                        labelText: 'Categoría',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: barcodeController,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => unfocus(),
+                      decoration: InputDecoration(
+                        labelText: 'Código de Barras',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(AppIcons.qrCodeScanner),
+                          onPressed: () async {
+                            final code = await BarcodeScannerService.scanBarcode(context);
+                            if (code != null) {
+                              barcodeController.text = code;
+                              final lookedUp = await _productRepository.lookupByBarcode(code);
+                              if (lookedUp != null && nameController.text.isEmpty) {
+                                nameController.text = lookedUp.name;
+                                descriptionController.text = lookedUp.description ?? '';
+                                priceController.text = lookedUp.price.toString();
+                                categoryController.text = lookedUp.category ?? '';
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  border: OutlineInputBorder(),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancelar'),
                 ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: priceController,
-                decoration: const InputDecoration(
-                  labelText: 'Precio',
-                  border: OutlineInputBorder(),
-                  prefixText: '\$ ',
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: stockController,
-                decoration: const InputDecoration(
-                  labelText: 'Stock',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: categoryController,
-                decoration: const InputDecoration(
-                  labelText: 'Categoría',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: barcodeController,
-                decoration: InputDecoration(
-                  labelText: 'Código de Barras',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: const Icon(AppIcons.qrCodeScanner),
-                    onPressed: () async {
-                      final code = await BarcodeScannerService.scanBarcode(context);
-                      if (code != null) {
-                        barcodeController.text = code;
-                        // Try to lookup product info
-                        final lookedUp = await _productRepository.lookupByBarcode(code);
-                        if (lookedUp != null && nameController.text.isEmpty) {
-                          nameController.text = lookedUp.name;
-                          descriptionController.text = lookedUp.description ?? '';
-                          priceController.text = lookedUp.price.toString();
-                          categoryController.text = lookedUp.category ?? '';
-                        }
-                      }
-                    },
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06b6d4),
                   ),
+                  child: const Text('Guardar', style: TextStyle(color: Colors.white)),
                 ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF06b6d4),
+              ],
             ),
-            child: const Text('Guardar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+          );
+        },
       ),
     );
 
     if (result == true) {
       try {
-        final data = {
+        String? imageUrl = product?.imageUrl;
+        if (pickedImage != null) {
+          final storeId = product?.storeId.toString() ?? (await _storeRepository.getMyStore()).id.toString();
+          imageUrl = await _storageService.uploadProductImage(
+            file: pickedImage!,
+            storeId: storeId,
+            productName: nameController.text.trim().isEmpty ? 'producto' : nameController.text.trim(),
+          );
+        }
+
+        final data = <String, dynamic>{
           'name': nameController.text,
           'description': descriptionController.text,
-          'price': double.parse(priceController.text),
-          'stock': int.parse(stockController.text),
+          'price': double.tryParse(priceController.text) ?? 0,
+          'stock': int.tryParse(stockController.text) ?? 0,
           'category': categoryController.text,
           if (barcodeController.text.isNotEmpty) 'barcode': barcodeController.text,
+          if (imageUrl != null) 'imageUrl': imageUrl,
         };
 
         if (product == null) {
@@ -169,7 +278,6 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
         }
 
         _loadProducts();
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(product == null ? 'Producto creado' : 'Producto actualizado')),
@@ -183,6 +291,15 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
         }
       }
     }
+  }
+
+  Widget _buildImagePlaceholder(double size) {
+    return Container(
+      width: size,
+      height: size,
+      color: Colors.grey[300],
+      child: Icon(Icons.image, size: size * 0.5, color: Colors.grey[600]),
+    );
   }
 
   Future<void> _deleteProduct(StoreProduct product) async {
@@ -227,43 +344,27 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
     }
   }
 
-  List<StoreProduct> _getFilteredProducts() {
-    if (_searchQuery.isEmpty) return _products;
-    return _products.where((p) => 
-      p.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-      (p.category?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-    ).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = _getFilteredProducts();
-
     return TropicalScaffold(
       body: Column(
         children: [
-          // Header
+          // Header sin buscador: un solo buscador en el flujo tienda (en POS)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
             child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar productos...',
-                      prefixIcon: const Icon(AppIcons.search),
-                      filled: true,
-                      fillColor: const Color(0xFFf1f5f9),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                const Expanded(
+                  child: Text(
+                    'Catálogo de productos',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0f172a),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
                 FloatingActionButton(
                   onPressed: () => _showProductDialog(),
                   backgroundColor: const Color(0xFF06b6d4),
@@ -276,7 +377,7 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : filteredProducts.isEmpty
+                : _products.isEmpty
                     ? const Center(
                         child: Text(
                           'No hay productos',
@@ -287,9 +388,9 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
                         onRefresh: _loadProducts,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
-                          itemCount: filteredProducts.length,
+                          itemCount: _products.length,
                           itemBuilder: (context, index) {
-                            final product = filteredProducts[index];
+                            final product = _products[index];
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: ProductCard(

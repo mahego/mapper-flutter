@@ -139,18 +139,23 @@ class _StorePosPageState extends State<StorePosPage> {
     final filteredProducts = _getFilteredProducts();
 
     return TropicalScaffold(
-      body: Row(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Row(
         children: [
           // Products List
           Expanded(
             flex: 2,
             child: Column(
               children: [
-                // Search Bar
+                // Un solo buscador del flujo tienda (POS)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: TextField(
                     onChanged: (value) => setState(() => _searchQuery = value),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => FocusScope.of(context).unfocus(),
                     decoration: InputDecoration(
                       hintText: 'Buscar productos...',
                       prefixIcon: const Icon(Icons.search),
@@ -362,6 +367,7 @@ class _StorePosPageState extends State<StorePosPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

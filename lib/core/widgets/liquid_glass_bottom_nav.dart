@@ -1,5 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'glass_surface.dart';
 
 /// Bottom navigation item configuration
 class BottomNavItem {
@@ -41,13 +41,6 @@ class LiquidGlassBottomNav extends StatelessWidget {
       top: false,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0f172a).withOpacity(0.92),
-          border: Border(
-            top: BorderSide(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
@@ -56,27 +49,28 @@ class LiquidGlassBottomNav extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.only(
-                top: 8,
-                bottom: 8,
-                left: 8,
-                right: 8,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(
-                  items.length,
-                  (index) => Expanded(
-                    child: _BottomNavButton(
-                      item: items[index],
-                      isActive: currentIndex == index,
-                      onTap: () => onTap?.call(index),
-                    ),
-                  ),
+        child: GlassSurface(
+          blur: 20,
+          opacity: 0.08,
+          borderOpacity: 0.18,
+          highlightOpacity: 0.26,
+          noiseOpacity: 0.04,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+          padding: const EdgeInsets.only(
+            top: 8,
+            bottom: 8,
+            left: 8,
+            right: 8,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(
+              items.length,
+              (index) => Expanded(
+                child: _BottomNavButton(
+                  item: items[index],
+                  isActive: currentIndex == index,
+                  onTap: () => onTap?.call(index),
                 ),
               ),
             ),

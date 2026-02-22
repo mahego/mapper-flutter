@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
@@ -6,11 +7,24 @@ import 'core/router/app_router.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
 import 'core/network/api_client.dart';
+import 'core/constants/app_constants.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables from .env file
+  try {
+    await dotenv.load();
+    debugPrint('✅ Environment variables loaded successfully');
+  } catch (e) {
+    debugPrint('⚠️ Warning: .env file not found or could not be loaded: $e');
+    debugPrint('ℹ️ Using default values');
+  }
+  
+  // Initialize AppConstants with loaded environment variables
+  AppConstants.initialize();
   
   // Initialize Firebase
   try {

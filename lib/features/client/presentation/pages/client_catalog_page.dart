@@ -5,6 +5,7 @@ import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
 import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/cart_service.dart';
+import '../../../../core/services/navigation_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/theme/app_icons.dart';
@@ -35,7 +36,6 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
   bool _loading = true;
   String? _error;
   
-  bool _drawerOpen = false;
   bool _showNotifications = false;
   int _unreadNotificationsCount = 0;
   
@@ -372,18 +372,10 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                   ),
                               ],
                             ),
-                            if (width < 768)
-                              IconButton(
-                                onPressed: () {
-                                  setState(() => _drawerOpen = !_drawerOpen);
-                                },
-                                icon: const Icon(Icons.menu, color: Colors.white),
-                              )
-                            else
-                              IconButton(
-                                onPressed: () => context.pop(),
-                                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                              ),
+                            IconButton(
+                              onPressed: () => context.pop(),
+                              icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            ),
                           ],
                         ),
                       ],
@@ -614,24 +606,36 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                                               ),
                                                             ],
                                                           ),
-                                                          Material(
-                                                            color: Colors.transparent,
-                                                            child: InkWell(
-                                                              onTap: () => _showAddToCartDialog(productId, name, price),
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                                            decoration: BoxDecoration(
+                                                              color: Colors.white.withOpacity(0.08),
                                                               borderRadius: BorderRadius.circular(8),
-                                                              child: Container(
-                                                                padding: const EdgeInsets.all(8),
-                                                                decoration: BoxDecoration(
-                                                                  color: const Color(0xFF06b6d4).withOpacity(0.2),
-                                                                  borderRadius: BorderRadius.circular(8),
-                                                                  border: Border.all(color: const Color(0xFF06b6d4)),
+                                                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize: MainAxisSize.min,
+                                                              children: [
+                                                                _QtyButton(
+                                                                  icon: AppIcons.minus,
+                                                                  onTap: inCart > 0
+                                                                      ? () => _decrementCart(productId)
+                                                                      : null,
                                                                 ),
-                                                                child: const Icon(
-                                                                  AppIcons.shoppingCart,
-                                                                  color: Color(0xFF06b6d4),
-                                                                  size: 20,
+                                                                const SizedBox(width: 6),
+                                                                Text(
+                                                                  inCart.toString(),
+                                                                  style: const TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  ),
                                                                 ),
-                                                              ),
+                                                                const SizedBox(width: 6),
+                                                                _QtyButton(
+                                                                  icon: AppIcons.add,
+                                                                  onTap: () => _incrementCart(productId, name, price),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ),
                                                         ],
@@ -651,8 +655,6 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
               ),
             ),
           ),
-          // Drawer
-          if (width < 768) _buildDrawer(),
           // Notifications panel
           if (_showNotifications)
             Positioned(
@@ -672,230 +674,47 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
             ),
         ],
       ),
-      bottomNavigationBar: MediaQuery.of(context).size.width < 768 ? _buildBottomNav() : null,
     );
   }
 
-  Widget _buildDrawer() {
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 300),
-      right: _drawerOpen ? 0 : -250,
-      top: 0,
-      bottom: 0,
-      width: 250,
-      child: Stack(
-        children: [
-          if (_drawerOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => setState(() => _drawerOpen = false),
-                child: Container(color: Colors.black.withOpacity(0.3)),
-              ),
-            ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              border: Border(
-                left: BorderSide(
-                  color: Colors.white.withOpacity(0.15),
-                  width: 1.5,
-                ),
-              ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: const Text(
-                    'Catálogo',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 18),
-                  ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    children: [
-                      _drawerLink('Dashboard', Icons.dashboard_outlined, () {
-                        context.go('/dashboard/cliente');
-                        setState(() => _drawerOpen = false);
-                      }),
-                      _drawerLink('Mi Carrito', AppIcons.shoppingCart, () {
-                        _showCartSummary();
-                        setState(() => _drawerOpen = false);
-                      }),
-                      _drawerLink('Refrescar', Icons.refresh, () {
-                        _load();
-                        setState(() => _drawerOpen = false);
-                      }),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+
+
+  void _incrementCart(String productId, String productName, double price) {
+    final previous = _cart[productId]?['quantity'] ?? 0;
+    setState(() {
+      final current = _cart[productId];
+      if (current == null) {
+        _cart[productId] = {
+          'name': productName,
+          'price': price,
+          'quantity': 1,
+        };
+      } else {
+        current['quantity'] = (current['quantity'] as int) + 1;
+      }
+      _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
+    });
+    _saveCartToStorage();
+    if (previous == 0) {
+      _showCartConfirmation(productName, 1, price);
+    }
   }
 
-  Widget _drawerLink(String label, IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        leading: Icon(icon, color: Colors.white.withOpacity(0.8)),
-        title: Text(label, style: const TextStyle(color: Colors.white)),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return LiquidGlassBottomNav(
-      items: const [
-        BottomNavItem(label: 'Inicio', icon: Icons.home_outlined, route: '/dashboard/cliente'),
-        BottomNavItem(label: 'Solicitudes', icon: Icons.assignment_outlined, route: '/solicitudes'),
-        BottomNavItem(label: 'Tracking', icon: Icons.location_on_outlined, route: '/tracking'),
-        BottomNavItem(label: 'Perfil', icon: Icons.person_outline, route: '/perfil'),
-      ],
-      currentIndex: 0,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/dashboard/cliente');
-            break;
-          case 1:
-            context.go('/solicitudes');
-            break;
-          case 2:
-            context.go('/tracking');
-            break;
-          case 3:
-            context.go('/perfil');
-            break;
-        }
-      },
-    );
-  }
-
-  void _showAddToCartDialog(String productId, String productName, double price) {
-    int quantity = _cart[productId]?['quantity'] ?? 0;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: const Color(0xFF0f172a).withOpacity(0.95),
-              title: Text(
-                productName,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Precio: \$${price.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Color(0xFF06b6d4), fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Cantidad',
-                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(
-                          onPressed: quantity > 0 ? () => setDialogState(() => quantity--) : null,
-                          icon: const Icon(AppIcons.minus, color: Color(0xFF06b6d4)),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            quantity.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => setDialogState(() => quantity++),
-                          icon: const Icon(AppIcons.add, color: Color(0xFF06b6d4)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (quantity > 0) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      'Total: \$${(price * quantity).toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Color(0xFF10b981),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: quantity > 0 ? const Color(0xFF06b6d4) : Colors.grey,
-                  ),
-                  onPressed: quantity > 0
-                      ? () {
-                          setState(() {
-                            _cart[productId] = {
-                              'name': productName,
-                              'price': price,
-                              'quantity': quantity,
-                            };
-                            _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
-                          });
-                          _saveCartToStorage();
-                          Navigator.pop(context);
-                          _showCartConfirmation(productName, quantity, price);
-                        }
-                      : null,
-                  child: const Text('Agregar', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  void _decrementCart(String productId) {
+    setState(() {
+      final current = _cart[productId];
+      if (current == null) {
+        return;
+      }
+      final qty = (current['quantity'] as int) - 1;
+      if (qty <= 0) {
+        _cart.remove(productId);
+      } else {
+        current['quantity'] = qty;
+      }
+      _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
+    });
+    _saveCartToStorage();
   }
 
   void _showProductDetails(Map<String, dynamic> product) {
@@ -907,30 +726,33 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
     final category = product['category'] ?? product['categoryName'];
     final productId = product['id']?.toString() ?? '';
     final inCart = _cart[productId]?['quantity'] ?? 0;
+    int dialogQty = inCart;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0f172a).withOpacity(0.95),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0f172a).withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                 // Image Section
                 Stack(
                   children: [
@@ -1120,7 +942,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                     ),
                   ),
                 ),
-                // Add to Cart Button
+                // Inline quantity control
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -1128,26 +950,43 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                       top: BorderSide(color: Colors.white.withOpacity(0.12)),
                     ),
                   ),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showAddToCartDialog(productId, name, price);
-                    },
-                    icon: const Icon(AppIcons.shoppingCart, size: 20),
-                    label: Text(inCart > 0 ? 'Modificar cantidad' : 'Agregar al carrito'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06b6d4),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _QtyButton(
+                        icon: AppIcons.minus,
+                        onTap: dialogQty > 0
+                            ? () {
+                                _decrementCart(productId);
+                                setDialogState(() => dialogQty = (dialogQty - 1).clamp(0, 999));
+                              }
+                            : null,
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Text(
+                        dialogQty.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _QtyButton(
+                        icon: AppIcons.add,
+                        onTap: () {
+                          _incrementCart(productId, name, price);
+                          setDialogState(() => dialogQty = dialogQty + 1);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1329,33 +1168,68 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
   }
 
   Future<void> _checkoutCart() async {
-    final itemCount = _cart.length;
-    final total = _cart.values.fold<double>(0, (sum, item) {
-      return sum + ((item['price'] as double) * (item['quantity'] as int));
-    });
+    if (_cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El carrito está vacío'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$itemCount producto(s) por \$$total. Funcionalidad de pago próximamente.'),
-        backgroundColor: const Color(0xFF06b6d4),
-        duration: const Duration(seconds: 3),
+    // Get store name from products if available
+    String storeName = 'Tienda';
+    if (_products.isNotEmpty) {
+      final firstProduct = _products.first;
+      if (firstProduct is Map && firstProduct.containsKey('storeName')) {
+        storeName = firstProduct['storeName'] ?? 'Tienda';
+      }
+    }
+
+    // Navigate to checkout page using NavigationService
+    navigationService.goToClientCheckout(
+      context,
+      widget.storeId,
+      storeName: storeName,
+      cart: Map<String, Map<String, dynamic>>.from(_cart),
+    );
+  }
+}
+
+class _QtyButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _QtyButton({
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onTap != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(isEnabled ? 0.12 : 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Colors.white.withOpacity(isEnabled ? 0.25 : 0.12),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: isEnabled ? const Color(0xFF06b6d4) : Colors.white.withOpacity(0.35),
+          ),
+        ),
       ),
     );
-
-    // TODO: Implementar pago real
-    // Por ahora, limpiar carrito después de "checkout" simulado
-    // En producción, esto sucedería después de confirmar el pago
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    try {
-      setState(() {
-        _cart.clear();
-        _cartItemCount = 0;
-      });
-      await _cartService.clearCart();
-      print('[ClientCatalogPage] Carrito limpiado después de checkout');
-    } catch (e) {
-      print('Error clearing cart after checkout: $e');
-    }
   }
 }

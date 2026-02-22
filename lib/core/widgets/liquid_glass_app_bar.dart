@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_icons.dart';
+import 'glass_surface.dart';
 
 /// Top bar with notification and menu buttons in Liquid Glass style
 /// Positioned at top-right corner with transparent buttons
@@ -70,14 +71,24 @@ class _IconButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const CircleBorder(),
-            child: Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              child: Icon(
-                icon,
-                size: 20,
-                color: Colors.white.withOpacity(0.85),
+            child: GlassSurface(
+              blur: 16,
+              opacity: 0.08,
+              borderOpacity: 0.22,
+              highlightOpacity: 0.28,
+              noiseOpacity: 0.04,
+              borderRadius: BorderRadius.circular(999),
+              padding: EdgeInsets.zero,
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: Colors.white.withOpacity(0.85),
+                  ),
+                ),
               ),
             ),
           ),

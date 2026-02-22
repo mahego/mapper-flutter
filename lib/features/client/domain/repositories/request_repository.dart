@@ -25,17 +25,84 @@ class ServiceCategoryModel {
   });
 
   factory ServiceCategoryModel.fromJson(Map<String, dynamic> json) {
-    final servicesList = json['services'] as List<dynamic>? ?? [];
-    return ServiceCategoryModel(
-      id: (json['id'] ?? 0) as int,
-      name: (json['name'] ?? json['label'] ?? '') as String,
-      description: json['description'] as String?,
-      icon: json['icon'] as String?,
-      requiresOrigin: json['requires_origin'] ?? json['requiresPickup'] ?? true,
-      basePrice: (json['base_price'] ?? json['basePrice'] ?? 150).toDouble(),
-      pricePerKm: (json['price_per_km'] ?? json['pricePerKm'] ?? 12).toDouble(),
-      services: servicesList.map((e) => ServiceTypeModel.fromJson(Map<String, dynamic>.from(e as Map))).toList(),
-    );
+    try {
+      print('    📌 Parseando categoría: ${json['name'] ?? json['id'] ?? 'unknown'}');
+      
+      // Parse services
+      final servicesList = json['services'] as List<dynamic>? ?? [];
+      final parsedServices = <ServiceTypeModel>[];
+      
+      for (var i = 0; i < servicesList.length; i++) {
+        try {
+          final service = servicesList[i];
+          if (service is Map) {
+            final parsed = ServiceTypeModel.fromJson(Map<String, dynamic>.from(service));
+            parsedServices.add(parsed);
+          }
+        } catch (e) {
+          print('      ⚠️ Error parsing service $i: $e');
+        }
+      }
+      
+      // Parse fields with fallbacks
+      int id = 0;
+      try {
+        id = int.parse(json['id'].toString());
+      } catch (e) {
+        print('      ⚠️ Error parsing id: $e, usando default 0');
+      }
+      
+      final name = (json['name'] ?? json['label'] ?? 'Sin nombre').toString();
+      final description = json['description']?.toString();
+      final icon = json['icon']?.toString();
+      
+      bool requiresOrigin = true;
+      try {
+        requiresOrigin = json['requires_origin'] ?? json['requiresPickup'] ?? true;
+      } catch (e) {
+        print('      ⚠️ Error parsing requiresOrigin: $e, usando true');
+      }
+      
+      double basePrice = 150.0;
+      try {
+        final bp = json['base_price'] ?? json['basePrice'] ?? 150;
+        if (bp is String) {
+          basePrice = double.tryParse(bp) ?? 150.0;
+        } else if (bp is num) {
+          basePrice = bp.toDouble();
+        }
+      } catch (e) {
+        print('      ⚠️ Error parsing basePrice: $e, usando 150.0');
+      }
+      
+      double pricePerKm = 12.0;
+      try {
+        final ppk = json['price_per_km'] ?? json['pricePerKm'] ?? 12;
+        if (ppk is String) {
+          pricePerKm = double.tryParse(ppk) ?? 12.0;
+        } else if (ppk is num) {
+          pricePerKm = ppk.toDouble();
+        }
+      } catch (e) {
+        print('      ⚠️ Error parsing pricePerKm: $e, usando 12.0');
+      }
+      
+      return ServiceCategoryModel(
+        id: id,
+        name: name,
+        description: description,
+        icon: icon,
+        requiresOrigin: requiresOrigin,
+        basePrice: basePrice,
+        pricePerKm: pricePerKm,
+        services: parsedServices,
+      );
+    } catch (e, st) {
+      print('    ❌ Error parsing category: $e');
+      print('    JSON: $json');
+      print('    Stack: $st');
+      rethrow;
+    }
   }
 }
 
@@ -58,14 +125,62 @@ class ServiceTypeModel {
   });
 
   factory ServiceTypeModel.fromJson(Map<String, dynamic> json) {
-    return ServiceTypeModel(
-      id: (json['id'] ?? 0) as int,
-      name: (json['name'] ?? json['title'] ?? '') as String,
-      icon: json['icon'] as String?,
-      basePrice: (json['base_price'] ?? json['basePrice'] ?? 150).toDouble(),
-      pricePerKm: (json['price_per_km'] ?? json['pricePerKm'] ?? 12).toDouble(),
-      requiresOrigin: json['requires_origin'] ?? json['requiresPickup'] ?? true,
-    );
+    try {
+      int id = 0;
+      try {
+        id = int.parse(json['id'].toString());
+      } catch (e) {
+        print('      ⚠️ Error parsing service id: $e');
+      }
+      
+      final name = (json['name'] ?? json['title'] ?? 'Sin nombre').toString();
+      final icon = json['icon']?.toString();
+      
+      double basePrice = 150.0;
+      try {
+        final bp = json['base_price'] ?? json['basePrice'] ?? 150;
+        if (bp is String) {
+          basePrice = double.tryParse(bp) ?? 150.0;
+        } else if (bp is num) {
+          basePrice = bp.toDouble();
+        }
+      } catch (e) {
+        print('      ⚠️ Error parsing service basePrice: $e');
+      }
+      
+      double pricePerKm = 12.0;
+      try {
+        final ppk = json['price_per_km'] ?? json['pricePerKm'] ?? 12;
+        if (ppk is String) {
+          pricePerKm = double.tryParse(ppk) ?? 12.0;
+        } else if (ppk is num) {
+          pricePerKm = ppk.toDouble();
+        }
+      } catch (e) {
+        print('      ⚠️ Error parsing service pricePerKm: $e');
+      }
+      
+      bool requiresOrigin = true;
+      try {
+        requiresOrigin = json['requires_origin'] ?? json['requiresPickup'] ?? true;
+      } catch (e) {
+        print('      ⚠️ Error parsing service requiresOrigin: $e');
+      }
+      
+      return ServiceTypeModel(
+        id: id,
+        name: name,
+        icon: icon,
+        basePrice: basePrice,
+        pricePerKm: pricePerKm,
+        requiresOrigin: requiresOrigin,
+      );
+    } catch (e, st) {
+      print('❌ Error parsing service type: $e');
+      print('JSON: $json');
+      print('Stack: $st');
+      rethrow;
+    }
   }
 }
 
@@ -179,12 +294,81 @@ class RequestRepository {
 
   /// Categorías con servicios (paridad Angular getServiceCategoriesOrganizational)
   Future<List<ServiceCategoryModel>> getServiceCategories() async {
-    final response = await _apiClient.get(ApiEndpoints.serviceCategories);
-    final data = response.data;
-    final raw = data is Map ? (data['data'] ?? data) : data;
-    final list = raw is Map ? (raw['categories'] ?? raw) : (raw is List ? raw : []);
-    if (list is! List) return [];
-    return list.map((e) => ServiceCategoryModel.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    try {
+      print('🔍 Solicitando categorías de servicio...');
+      final response = await _apiClient.get(ApiEndpoints.serviceCategories);
+      print('📦 Respuesta recibida del servidor');
+      print('📄 Response data: ${response.data}');
+      print('📄 Response type: ${response.data.runtimeType}');
+      
+      // Extrae la lista dependiendo de cómo venga
+      List<dynamic> list = [];
+      
+      final data = response.data;
+      if (data is Map) {
+        // Intenta extraer data.data primero
+        if (data['data'] != null) {
+          final innerData = data['data'];
+          if (innerData is List) {
+            list = innerData;
+          } else if (innerData is Map) {
+            // Busca categories dentro
+            if (innerData['categories'] != null && innerData['categories'] is List) {
+              list = innerData['categories'];
+            } else {
+              // Intenta otros nombres comunes
+              list = innerData.values.whereType<List>().toList().isNotEmpty 
+                ? innerData.values.whereType<List>().first 
+                : [];
+            }
+          }
+        } else if (data['categories'] != null && data['categories'] is List) {
+          // Busca categories directamente
+          list = data['categories'];
+        }
+      } else if (data is List) {
+        list = data;
+      }
+      
+      print('📋 Lista extraída: ${list.length} elementos');
+      
+      if (list.isEmpty) {
+        print('⚠️ Lista vacía después de parsear');
+        return [];
+      }
+      
+      final categories = <ServiceCategoryModel>[];
+      for (var i = 0; i < list.length; i++) {
+        try {
+          final item = list[i];
+          print('  Procesando elemento $i: $item');
+          
+          if (item is Map) {
+            final category = ServiceCategoryModel.fromJson(
+              Map<String, dynamic>.from(item),
+            );
+            categories.add(category);
+            print('  ✓ Categoría $i: ${category.name} (${category.services.length} servicios)');
+          } else {
+            print('  ⚠️ Elemento $i no es un Map: ${item.runtimeType}');
+          }
+        } catch (e, st) {
+          print('  ❌ Error parseando categoría $i: $e');
+          print('  Stack: $st');
+        }
+      }
+      
+      print('🎯 Total de categorías parseadas: ${categories.length}');
+      if (categories.isEmpty) {
+        throw Exception('No se pudieron parsear categorías desde la respuesta');
+      }
+      
+      return categories;
+    } catch (e, stackTrace) {
+      print('❌ Error en getServiceCategories: $e');
+      print('Stack: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Direcciones guardadas (GET /addresses)

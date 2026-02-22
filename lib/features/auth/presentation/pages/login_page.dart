@@ -211,16 +211,26 @@ class _LoginPageState extends State<LoginPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo & Title
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 90,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 30,
-                          color: const Color(0xFF06b6d4).withOpacity(0.5),
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 30,
+                            color: const Color(0xFF06b6d4).withOpacity(0.4),
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/mapper-icon-256.png',
+                          fit: BoxFit.cover,
                         ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Text(

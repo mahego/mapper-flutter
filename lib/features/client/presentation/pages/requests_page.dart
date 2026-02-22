@@ -225,71 +225,85 @@ class _RequestsPageState extends State<RequestsPage> {
   }
 
   Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(AppIcons.errorOutline, size: 64, color: Colors.red.withOpacity(0.7)),
-            const SizedBox(height: 16),
-            Text(
-              _error,
-              style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-              textAlign: TextAlign.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(AppIcons.errorOutline, size: 64, color: Colors.red.withOpacity(0.7)),
+                  const SizedBox(height: 16),
+                  Text(
+                    _error,
+                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _loadRequests,
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF06b6d4)),
+                        child: const Text('Reintentar'),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: () => context.go('/dashboard/cliente'),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
+                        child: const Text('Volver'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: _loadRequests,
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF06b6d4)),
-                  child: const Text('Reintentar'),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () => context.go('/dashboard/cliente'),
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
-                  child: const Text('Volver'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildEmpty() {
     final statusLabel = _statusFilters.firstWhere((f) => f.$1 == _filterStatus, orElse: () => ('all', 'Todas')).$2;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(AppIcons.inbox, size: 80, color: Colors.white.withOpacity(0.3)),
-            const SizedBox(height: 16),
-            Text(
-              'No hay solicitudes con estado "$statusLabel"',
-              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/requests/new'),
-              icon: const Icon(AppIcons.add),
-              label: const Text('Crear una nueva solicitud'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFf97316),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(AppIcons.inbox, size: 80, color: Colors.white.withOpacity(0.3)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay solicitudes con estado "$statusLabel"',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => context.push('/requests/new'),
+                    icon: const Icon(AppIcons.add),
+                    label: const Text('Crear una nueva solicitud'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFf97316),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

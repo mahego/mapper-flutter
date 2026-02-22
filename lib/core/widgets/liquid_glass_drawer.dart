@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_icons.dart';
+import 'glass_surface.dart';
 
 /// Menu item for the drawer
 class DrawerMenuItem {
@@ -74,13 +75,6 @@ class LiquidGlassDrawer extends StatelessWidget {
               child: Container(
                 width: 280,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
-                  border: Border(
-                    left: BorderSide(
-                      color: Colors.white.withOpacity(0.12),
-                      width: 1,
-                    ),
-                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.15),
@@ -89,15 +83,21 @@ class LiquidGlassDrawer extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: _DrawerContent(
-                      menuItems: menuItems,
-                      userName: userName,
-                      userRole: userRole,
-                      onClose: onClose,
-                    ),
+                child: GlassSurface(
+                  blur: 20,
+                  opacity: 0.08,
+                  borderOpacity: 0.18,
+                  highlightOpacity: 0.26,
+                  noiseOpacity: 0.04,
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(20),
+                  ),
+                  padding: EdgeInsets.zero,
+                  child: _DrawerContent(
+                    menuItems: menuItems,
+                    userName: userName,
+                    userRole: userRole,
+                    onClose: onClose,
                   ),
                 ),
               ),

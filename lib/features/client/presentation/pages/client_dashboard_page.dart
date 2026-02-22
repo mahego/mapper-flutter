@@ -7,6 +7,7 @@ import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
 import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/navigation_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../domain/repositories/request_repository.dart';
@@ -563,7 +564,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
           runSpacing: 8,
           children: _recentOrderStores.map((s) {
             return GestureDetector(
-              onTap: () => context.push('/cliente/catalog/${s.id}'),
+              onTap: () => navigationService.goToClientCatalog(context, s.id),
               child: LiquidGlassCard(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
@@ -643,7 +644,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
             return LiquidGlassCard(
               padding: const EdgeInsets.all(12),
               child: InkWell(
-                onTap: () => context.push('/cliente/catalog/${store.id}'),
+                onTap: () => navigationService.goToClientCatalog(context, store.id),
                 borderRadius: BorderRadius.circular(12),
                 child: Row(
                   children: [

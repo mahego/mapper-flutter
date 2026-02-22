@@ -20,6 +20,8 @@ import '../../features/client/presentation/pages/new_request_page.dart';
 import '../../features/client/presentation/pages/request_detail_page.dart';
 import '../../features/client/presentation/pages/request_tracking_page.dart';
 import '../../features/client/presentation/pages/client_catalog_page.dart';
+import '../../features/client/presentation/pages/client_checkout_page.dart';
+import '../../features/client/presentation/pages/order_confirmation_page.dart';
 import '../../features/client/presentation/pages/store_order_detail_page.dart';
 import '../../features/store/presentation/pages/store_pos_page.dart';
 import '../../features/store/presentation/pages/store_catalog_page.dart';
@@ -85,6 +87,44 @@ class AppRouter {
         builder: (context, state) {
           final storeId = state.pathParameters['storeId'] ?? '';
           return ClientCatalogPage(storeId: storeId);
+        },
+        routes: [
+          GoRoute(
+            path: 'checkout',
+            name: 'cliente_checkout',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              if (extra == null) {
+                return const Scaffold(
+                  body: Center(child: Text('Error: datos de carrito no disponibles')),
+                );
+              }
+              return ClientCheckoutPage(
+                storeId: extra['storeId'] as String,
+                storeName: extra['storeName'] as String,
+                cart: extra['cart'] as Map<String, Map<String, dynamic>>,
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/client/order-confirmation',
+        name: 'order_confirmation',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: datos de orden no disponibles')),
+            );
+          }
+          return OrderConfirmationPage(
+            orderId: extra['orderId'] as String,
+            storeName: extra['storeName'] as String,
+            total: extra['total'] as double,
+            deliveryFee: extra['deliveryFee'] as double,
+            status: extra['status'] as String,
+          );
         },
       ),
       GoRoute(

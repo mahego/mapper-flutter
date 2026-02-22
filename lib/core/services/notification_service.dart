@@ -74,6 +74,12 @@ class NotificationService {
             .toList();
       }
       return [];
+    } on DioException catch (e) {
+      // 401 es esperado si el usuario no está autenticado
+      if (e.response?.statusCode != 401) {
+        print('Error fetching notifications: $e');
+      }
+      return [];
     } catch (e) {
       print('Error fetching notifications: $e');
       return [];
@@ -89,6 +95,12 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         return response.data['count'] as int? ?? 0;
+      }
+      return 0;
+    } on DioException catch (e) {
+      // 401 es esperado si el usuario no está autenticado
+      if (e.response?.statusCode != 401) {
+        print('Error fetching unread count: $e');
       }
       return 0;
     } catch (e) {
@@ -139,6 +151,12 @@ class NotificationService {
         return items
             .map((item) => NotificationModel.fromJson(item as Map<String, dynamic>))
             .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      // 401 es esperado si el usuario no está autenticado
+      if (e.response?.statusCode != 401) {
+        print('Error fetching unread notifications: $e');
       }
       return [];
     } catch (e) {

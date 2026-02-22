@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../theme/app_icons.dart';
 
 /// Social Login Button with Liquid Glass style
 /// Matches Angular's design: glass background, backdrop blur, and icon
@@ -92,44 +91,46 @@ class SocialLoginButton extends StatelessWidget {
   }
 
   Widget _buildGoogleIcon() {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: CustomPaint(
-        painter: _GoogleIconPainter(),
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            color: Color(0xFF1F2937),
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildFacebookIcon() {
-    return const Icon(
-      AppIcons.facebook,
-      color: Colors.white,
-      size: 20,
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1877F2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Center(
+        child: Text(
+          'f',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
-}
-
-/// Custom painter for Google icon (multicolor G)
-class _GoogleIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // Google "G" simplified - using white for liquid glass theme
-    paint.color = Colors.white;
-    
-    // Draw a simplified "G" shape
-    final path = Path();
-    
-    // Outer circle
-    path.addOval(Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2));
-    
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Divider with text for social login section
