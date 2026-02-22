@@ -35,6 +35,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _drawerOpen = false;
   bool _showNotifications = false;
   int _unreadNotificationsCount = 0;
+  
+  // Expand/collapse state for tabs
+  bool _expandPersonal = true;
+  bool _expandAddresses = false;
+  bool _expandSettings = false;
 
   @override
   void initState() {
@@ -215,6 +220,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                             child: Column(
                               children: [
+                                // Profile header
                                 CircleAvatar(
                                   radius: 44,
                                   backgroundColor: Colors.white.withOpacity(0.15),
@@ -229,59 +235,34 @@ class _ProfilePageState extends State<ProfilePage> {
                                   const SizedBox(height: 4),
                                   Text(_roleLabel, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
                                 ],
-                                const SizedBox(height: 8),
-                                Text(
-                                  _email,
-                                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
-                                ),
-                                if (_phone != null && _phone!.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(_phone!, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
-                                ],
                                 if (_error != null) ...[
                                   const SizedBox(height: 16),
                                   Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
                                 ],
                                 const SizedBox(height: 24),
-                                LiquidGlassCard(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(Icons.location_on_outlined, color: Colors.white.withOpacity(0.8), size: 22),
-                                          const SizedBox(width: 8),
-                                          Text('Direcciones guardadas', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16, fontWeight: FontWeight.w600)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      if (_addressesLoading)
-                                        const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Color(0xFF06b6d4), strokeWidth: 2))),
-                                      if (!_addressesLoading && _addresses.isEmpty)
-                                        Text('Sin direcciones guardadas.', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
-                                      if (!_addressesLoading && _addresses.isNotEmpty)
-                                        ..._addresses.map((a) => Padding(
-                                              padding: const EdgeInsets.only(bottom: 8),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(12),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.06),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(a.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                                                    const SizedBox(height: 4),
-                                                    Text(a.address, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
-                                                  ],
-                                                ),
-                                              ),
-                                            )),
-                                    ],
-                                  ),
+                                // Collapsible panels
+                                _buildCollapsiblePanel(
+                                  title: 'Datos Personales',
+                                  icon: Icons.person_outline,
+                                  isExpanded: _expandPersonal,
+                                  onTap: () => setState(() => _expandPersonal = !_expandPersonal),
+                                  child: _buildPersonalDataPanel(),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildCollapsiblePanel(
+                                  title: 'Direcciones Guardadas',
+                                  icon: Icons.location_on_outlined,
+                                  isExpanded: _expandAddresses,
+                                  onTap: () => setState(() => _expandAddresses = !_expandAddresses),
+                                  child: _buildAddressesPanel(),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildCollapsiblePanel(
+                                  title: 'Configuración',
+                                  icon: Icons.settings_outlined,
+                                  isExpanded: _expandSettings,
+                                  onTap: () => setState(() => _expandSettings = !_expandSettings),
+                                  child: _buildSettingsPanel(),
                                 ),
                                 const SizedBox(height: 24),
                                 SizedBox(
@@ -328,6 +309,282 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildCollapsiblePanel({
+    required String title,
+    required IconData icon,
+    required bool isExpanded,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.15)),
+        ),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: onTap,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  children: [
+                    Icon(icon, color: Colors.white.withOpacity(0.8), size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (isExpanded) ...[
+              Container(
+                height: 1,
+                color: Colors.white.withOpacity(0.1),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: child,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalDataPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildInfoField('Nombre', _name.isNotEmpty ? _name : 'No especificado', Icons.person),
+        const SizedBox(height: 12),
+        _buildInfoField('Email', _email, Icons.email),
+        const SizedBox(height: 12),
+        _buildInfoField(
+          'Teléfono',
+          _phone != null && _phone!.isNotEmpty ? _phone! : 'No especificado',
+          Icons.phone,
+        ),
+        const SizedBox(height: 12),
+        _buildInfoField('Rol', _roleLabel.isNotEmpty ? _roleLabel : 'No especificado', Icons.badge),
+      ],
+    );
+  }
+
+  Widget _buildAddressesPanel() {
+    if (_addressesLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(color: Color(0xFF06b6d4), strokeWidth: 2),
+        ),
+      );
+    }
+
+    if (_addresses.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Sin direcciones guardadas.',
+            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _addresses
+          .asMap()
+          .entries
+          .map((entry) {
+            final index = entry.key;
+            final address = entry.value;
+            final isLast = index == _addresses.length - 1;
+            return Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: const Color(0xFF06b6d4),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            address.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        address.address,
+                        style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isLast) const SizedBox(height: 8),
+              ],
+            );
+          })
+          .toList(),
+    );
+  }
+
+  Widget _buildSettingsPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSettingToggle('Notificaciones por email', true, (value) {
+          // Handle preference
+        }),
+        const SizedBox(height: 12),
+        _buildSettingToggle('Notificaciones SMS', false, (value) {
+          // Handle preference
+        }),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Privacidad',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Gestionar compartición de datos',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.5)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoField(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white.withOpacity(0.7), size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingToggle(String label, bool value, Function(bool) onChanged) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF06b6d4),
+          ),
+        ],
+      ),
     );
   }
 
