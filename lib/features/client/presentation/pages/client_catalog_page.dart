@@ -4,6 +4,7 @@ import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
 import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/services/notification_service.dart';
+import '../../../../core/services/cart_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 
@@ -20,6 +21,7 @@ class ClientCatalogPage extends StatefulWidget {
 class _ClientCatalogPageState extends State<ClientCatalogPage> {
   final _apiClient = ApiClient();
   late final _notificationService = NotificationService(apiClient: ApiClient());
+  late final _cartService = CartService();
   
   List<dynamic> _products = [];
   bool _loading = true;
@@ -38,6 +40,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
     super.initState();
     _load();
     _loadNotificationCount();
+    _loadCartFromStorage();
   }
 
   Future<void> _loadNotificationCount() async {
@@ -86,6 +89,42 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
           _loading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadCartFromStorage() async {
+    try {
+      final cartData = await _cartService.loadCart();
+      if (cartData != null && mounted) {
+        // Only load if cart is for the same store
+        if (cartData['storeId'] == widget.storeId) {
+          setState(() {
+            final items = cartData['items'] as Map<String, dynamic>?;
+            if (items != null) {
+              // Convert cart format: {productId: {name, price, quantity}}
+              for (var entry in items.entries) {
+                _cart[entry.key] = {
+                  'name': entry.value['name'],
+                  'price': (entry.value['price'] as num).toDouble(),
+                  'quantity': entry.value['quantity'] as int,
+                };
+              }
+              _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
+              
+              // Show recovery message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Carrito retomado: $_cartItemCount artículos'),
+                  backgroundColor: const Color(0xFF10b981),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading cart from storage: $e');
     }
   }
 
