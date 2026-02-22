@@ -8,8 +8,11 @@ class AppConfig {
   static const String version = '1.0.0';
   
   // Mapbox Configuration
-  static const String mapboxAccessToken = 
-      'pk.eyJ1IjoibWFoZWdvdHMiLCJhIjoiY21rdml0ejNrMDZuMDNlb3d1YXE1eTJiciJ9.Q9oV0srILSJaKR2qXPuDXQ';
+  // Use environment variable: MAPBOX_ACCESS_TOKEN
+  static const String mapboxAccessToken = String.fromEnvironment(
+    'MAPBOX_ACCESS_TOKEN',
+    defaultValue: '', // Will be set at runtime from .env
+  );
   
   // Map Defaults
   static const double defaultLatitude = 19.4326; // Ciudad de México

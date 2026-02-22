@@ -3,6 +3,7 @@ import '../entities/user.dart';
 
 abstract class AuthRepository {
   Future<AuthResponse> login(String email, String password);
+  Future<AuthResponse> loginWithFirebase(String firebaseToken);
   Future<AuthResponse> register({
     required String email,
     required String password,

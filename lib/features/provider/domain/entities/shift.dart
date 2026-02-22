@@ -63,17 +63,17 @@ class Shift {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'store_id': storeId,
-      'store_name': storeName,
-      'store_address': storeAddress,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
-      'hourly_rate': hourlyRate,
+      'storeId': storeId,
+      'storeName': storeName,
+      'storeAddress': storeAddress,
+      'startTime': startTime.toIso8601String(),
+      'endTime': endTime.toIso8601String(),
+      'hourlyRate': hourlyRate,
       'status': status,
       'description': description,
-      'applicants_count': applicantsCount,
-      'has_applied': hasApplied,
-      'created_at': createdAt?.toIso8601String(),
+      'applicantsCount': applicantsCount,
+      'hasApplied': hasApplied,
+      'createdAt': createdAt?.toIso8601String(),
     };
   }
 }
@@ -114,10 +114,10 @@ class ShiftApplication {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'shift_id': shiftId,
-      'provider_id': providerId,
+      'shiftId': shiftId,
+      'providerId': providerId,
       'status': status,
-      'applied_at': appliedAt.toIso8601String(),
+      'appliedAt': appliedAt.toIso8601String(),
       'shift': shift?.toJson(),
     };
   }

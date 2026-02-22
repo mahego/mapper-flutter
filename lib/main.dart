@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/services/storage_service.dart';
@@ -9,6 +11,17 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('✅ Firebase initialized successfully');
+  } catch (e) {
+    // Firebase already initialized or initialization failed
+    debugPrint('⚠️ Firebase initialization: $e');
+  }
   
   // Initialize Storage Service
   await StorageService().init();

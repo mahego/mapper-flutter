@@ -12,9 +12,17 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // Validate required fields
+    if (json['token'] == null || json['token'] == '') {
+      throw Exception('Token is required but was null or empty. Full response: $json');
+    }
+    if (json['user'] == null) {
+      throw Exception('User data is required but was null. Full response: $json');
+    }
+
     return AuthResponse(
-      token: json['token'] as String,
-      refreshToken: json['refreshToken'] as String?,
+      token: json['token'].toString(),
+      refreshToken: json['refreshToken']?.toString(),
       user: User.fromJson(json['user'] as Map<String, dynamic>),
     );
   }

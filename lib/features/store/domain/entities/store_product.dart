@@ -28,17 +28,17 @@ class StoreProduct {
   factory StoreProduct.fromJson(Map<String, dynamic> json) {
     return StoreProduct(
       id: json['id'] ?? 0,
-      storeId: json['store_id'] ?? 0,
+      storeId: json['storeId'] ?? json['store_id'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'],
       price: (json['price'] ?? 0).toDouble(),
       stock: json['stock'] ?? 0,
       category: json['category'],
-      imageUrl: json['image_url'] ?? json['imageUrl'],
+      imageUrl: json['imageUrl'] ?? json['image_url'],
       barcode: json['barcode'],
-      isActive: json['is_active'] ?? true,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+      isActive: json['isActive'] ?? json['is_active'] ?? true,
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? DateTime.parse(json['createdAt'] ?? json['created_at'])
           : DateTime.now(),
     );
   }
@@ -46,16 +46,16 @@ class StoreProduct {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'store_id': storeId,
+      'storeId': storeId,
       'name': name,
       'description': description,
       'price': price,
       'stock': stock,
       'category': category,
-      'image_url': imageUrl,
+      'imageUrl': imageUrl,
       'barcode': barcode,
-      'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

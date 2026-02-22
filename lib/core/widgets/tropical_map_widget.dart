@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../constants/app_config.dart';
 
 class TropicalMapWidget extends StatefulWidget {
   final LatLng center;
@@ -37,10 +38,6 @@ class TropicalMapWidget extends StatefulWidget {
 class _TropicalMapWidgetState extends State<TropicalMapWidget> {
   late final MapController _mapController;
 
-  // Mapbox access token
-  static const String _mapboxAccessToken = 
-      'pk.eyJ1IjoibWFoZWdvdHMiLCJhIjoiY21rdml0ejNrMDZuMDNlb3d1YXE1eTJiciJ9.Q9oV0srILSJaKR2qXPuDXQ';
-
   @override
   void initState() {
     super.initState();
@@ -49,7 +46,7 @@ class _TropicalMapWidgetState extends State<TropicalMapWidget> {
 
   String get _mapboxStyleUrl {
     // Dark style for tropical theme
-    return 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=$_mapboxAccessToken';
+    return 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${AppConfig.mapboxAccessToken}';
   }
 
   @override

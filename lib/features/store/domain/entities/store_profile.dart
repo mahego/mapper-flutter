@@ -30,9 +30,9 @@ class StoreProfile {
       email: json['email'],
       description: json['description'],
       logo: json['logo'],
-      isActive: json['is_active'] ?? true,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+      isActive: json['isActive'] ?? json['is_active'] ?? true,
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? DateTime.parse(json['createdAt'] ?? json['created_at'])
           : DateTime.now(),
     );
   }
@@ -46,8 +46,8 @@ class StoreProfile {
       'email': email,
       'description': description,
       'logo': logo,
-      'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
+      'isActive': isActive,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

@@ -43,12 +43,12 @@ class Subscription {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'plan_type': planType,
+      'planType': planType,
       'status': status,
-      'end_date': endDate?.toIso8601String(),
-      'days_remaining': daysRemaining,
-      'auto_renew': autoRenew,
-      'start_date': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'daysRemaining': daysRemaining,
+      'autoRenew': autoRenew,
+      'startDate': startDate?.toIso8601String(),
       'price': price,
     };
   }

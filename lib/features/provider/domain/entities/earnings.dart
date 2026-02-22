@@ -52,23 +52,23 @@ class EarningsSummary {
 
   factory EarningsSummary.fromJson(Map<String, dynamic> json) {
     return EarningsSummary(
-      grossAmount: (json['gross_amount'] ?? 0).toDouble(),
-      platformFee: (json['platform_fee'] ?? 0).toDouble(),
-      netAmount: (json['net_amount'] ?? 0).toDouble(),
-      requestsCount: json['requests_count'] ?? 0,
-      avgPerRequest: (json['avg_per_request'] ?? 0).toDouble(),
-      feePercentage: (json['fee_percentage'] ?? 0).toDouble(),
+      grossAmount: (json['grossAmount'] ?? json['gross_amount'] ?? 0).toDouble(),
+      platformFee: (json['platformFee'] ?? json['platform_fee'] ?? 0).toDouble(),
+      netAmount: (json['netAmount'] ?? json['net_amount'] ?? 0).toDouble(),
+      requestsCount: json['requestsCount'] ?? json['requests_count'] ?? 0,
+      avgPerRequest: (json['avgPerRequest'] ?? json['avg_per_request'] ?? 0).toDouble(),
+      feePercentage: (json['feePercentage'] ?? json['fee_percentage'] ?? 0).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'gross_amount': grossAmount,
-      'platform_fee': platformFee,
-      'net_amount': netAmount,
-      'requests_count': requestsCount,
-      'avg_per_request': avgPerRequest,
-      'fee_percentage': feePercentage,
+      'grossAmount': grossAmount,
+      'platformFee': platformFee,
+      'netAmount': netAmount,
+      'requestsCount': requestsCount,
+      'avgPerRequest': avgPerRequest,
+      'feePercentage': feePercentage,
     };
   }
 }
@@ -97,26 +97,26 @@ class EarningsEntry {
   factory EarningsEntry.fromJson(Map<String, dynamic> json) {
     return EarningsEntry(
       id: json['id'] ?? 0,
-      requestId: json['request_id'] ?? 0,
-      grossAmount: (json['gross_amount'] ?? 0).toDouble(),
-      platformFee: (json['platform_fee'] ?? 0).toDouble(),
-      netAmount: (json['net_amount'] ?? 0).toDouble(),
+      requestId: json['requestId'] ?? json['request_id'] ?? 0,
+      grossAmount: (json['grossAmount'] ?? json['gross_amount'] ?? 0).toDouble(),
+      platformFee: (json['platformFee'] ?? json['platform_fee'] ?? 0).toDouble(),
+      netAmount: (json['netAmount'] ?? json['net_amount'] ?? 0).toDouble(),
       origin: json['origin'] ?? '',
       destination: json['destination'] ?? '',
-      completedAt: DateTime.parse(json['completed_at'] ?? DateTime.now().toIso8601String()),
+      completedAt: DateTime.parse(json['completedAt'] ?? json['completed_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'request_id': requestId,
-      'gross_amount': grossAmount,
-      'platform_fee': platformFee,
-      'net_amount': netAmount,
+      'requestId': requestId,
+      'grossAmount': grossAmount,
+      'platformFee': platformFee,
+      'netAmount': netAmount,
       'origin': origin,
       'destination': destination,
-      'completed_at': completedAt.toIso8601String(),
+      'completedAt': completedAt.toIso8601String(),
     };
   }
 }

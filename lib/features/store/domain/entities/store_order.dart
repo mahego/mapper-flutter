@@ -27,18 +27,18 @@ class StoreOrder {
     final itemsList = json['items'] as List<dynamic>? ?? [];
     return StoreOrder(
       id: json['id'] ?? 0,
-      storeId: json['store_id'] ?? 0,
-      clientId: json['client_id'],
-      clientName: json['client_name'] ?? 'Cliente',
+      storeId: json['storeId'] ?? json['store_id'] ?? 0,
+      clientId: json['clientId'] ?? json['client_id'],
+      clientName: json['clientName'] ?? json['client_name'] ?? 'Cliente',
       total: (json['total'] ?? 0).toDouble(),
       status: json['status'] ?? 'pending',
-      paymentMethod: json['payment_method'],
+      paymentMethod: json['paymentMethod'] ?? json['payment_method'],
       items: itemsList.map((item) => OrderItem.fromJson(item)).toList(),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? DateTime.parse(json['createdAt'] ?? json['created_at'])
           : DateTime.now(),
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'])
+      completedAt: json['completedAt'] != null || json['completed_at'] != null
+          ? DateTime.parse(json['completedAt'] ?? json['completed_at'])
           : null,
     );
   }
@@ -46,15 +46,15 @@ class StoreOrder {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'store_id': storeId,
-      'client_id': clientId,
-      'client_name': clientName,
+      'storeId': storeId,
+      'clientId': clientId,
+      'clientName': clientName,
       'total': total,
       'status': status,
-      'payment_method': paymentMethod,
+      'paymentMethod': paymentMethod,
       'items': items.map((item) => item.toJson()).toList(),
-      'created_at': createdAt.toIso8601String(),
-      'completed_at': completedAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
     };
   }
 }
@@ -76,8 +76,8 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      productId: json['product_id'] ?? 0,
-      productName: json['product_name'] ?? '',
+      productId: json['productId'] ?? json['product_id'] ?? 0,
+      productName: json['productName'] ?? json['product_name'] ?? '',
       quantity: json['quantity'] ?? 0,
       price: (json['price'] ?? 0).toDouble(),
       subtotal: (json['subtotal'] ?? 0).toDouble(),
@@ -86,8 +86,8 @@ class OrderItem {
 
   Map<String, dynamic> toJson() {
     return {
-      'product_id': productId,
-      'product_name': productName,
+      'productId': productId,
+      'productName': productName,
       'quantity': quantity,
       'price': price,
       'subtotal': subtotal,

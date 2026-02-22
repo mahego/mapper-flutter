@@ -11,17 +11,17 @@ class ProviderStats {
 
   factory ProviderStats.fromJson(Map<String, dynamic> json) {
     return ProviderStats(
-      pendingRequests: json['pending_requests'] ?? 0,
-      completedRequests: json['completed_requests'] ?? 0,
-      totalEarnings: (json['earnings']?['total'] ?? 0).toDouble(),
+      pendingRequests: json['pendingRequests'] ?? json['pending_requests'] ?? 0,
+      completedRequests: json['completedRequests'] ?? json['completed_requests'] ?? 0,
+      totalEarnings: (json['totalEarnings'] ?? json['earnings']?['total'] ?? 0).toDouble(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'pending_requests': pendingRequests,
-      'completed_requests': completedRequests,
-      'earnings': {'total': totalEarnings},
+      'pendingRequests': pendingRequests,
+      'completedRequests': completedRequests,
+      'totalEarnings': totalEarnings,
     };
   }
 }

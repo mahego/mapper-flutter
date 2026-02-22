@@ -63,5 +63,19 @@ app.*.map.json
 # Coverage
 coverage/
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Firebase & Credentials
+serviceAccountKey.json
+*.json.example
+google-services.json
+GoogleService-Info.plist
+
+# Generated files (but keep examples)
+!*.example.json
+
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages

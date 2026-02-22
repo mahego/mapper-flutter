@@ -1,3 +1,4 @@
+import 'package:logger/logger.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../../domain/entities/auth_response.dart';
@@ -6,6 +7,7 @@ import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final ApiClient apiClient;
+  final Logger _logger = Logger();
 
   AuthRepositoryImpl({required this.apiClient});
 
@@ -19,9 +21,42 @@ class AuthRepositoryImpl implements AuthRepository {
           'password': password,
         },
       );
-      return AuthResponse.fromJson(response.data);
-    } catch (e) {
+      
+      _logger.i('[AuthRepo] Login response: ${response.data}');
+      
+      // Backend returns { success: true, data: { user, token, refreshToken } }
+      final responseData = response.data;
+      if (responseData == null) {
+        throw Exception('Response data is null');
+      }
+      
+      final actualData = responseData['data'] ?? responseData;
+      _logger.i('[AuthRepo] Actual data: $actualData');
+      
+      return AuthResponse.fromJson(actualData as Map<String, dynamic>);
+    } catch (e, stackTrace) {
+      _logger.e('[AuthRepo] Login error: $e', error: e, stackTrace: stackTrace);
       throw Exception('Error en login: $e');
+    }
+  }
+
+  @override
+  Future<AuthResponse> loginWithFirebase(String firebaseToken) async {
+    try {
+      final response = await apiClient.post(
+        ApiEndpoints.firebaseLogin,
+        data: {
+          'firebaseToken': firebaseToken,
+        },
+      );
+      
+      // Backend returns { success: true, data: { user, token, refreshToken } }
+      final responseData = response.data;
+      final actualData = responseData['data'] ?? responseData;
+      
+      return AuthResponse.fromJson(actualData);
+    } catch (e) {
+      throw Exception('Error en login con Firebase: $e');
     }
   }
 
@@ -44,7 +79,12 @@ class AuthRepositoryImpl implements AuthRepository {
           if (phone != null) 'phone': phone,
         },
       );
-      return AuthResponse.fromJson(response.data);
+      
+      // Backend returns { success: true, data: { user, token, refreshToken } }
+      final responseData = response.data;
+      final actualData = responseData['data'] ?? responseData;
+      
+      return AuthResponse.fromJson(actualData);
     } catch (e) {
       throw Exception('Error en registro: $e');
     }
@@ -67,7 +107,12 @@ class AuthRepositoryImpl implements AuthRepository {
         ApiEndpoints.refreshToken,
         data: {'refreshToken': refreshToken},
       );
-      return response.data['token'] as String;
+      
+      // Backend returns { success: true, data: { token, ... } }
+      final responseData = response.data;
+      final actualData = responseData['data'] ?? responseData;
+      
+      return actualData['token'] as String;
     } catch (e) {
       throw Exception('Error al refrescar token: $e');
     }
@@ -77,7 +122,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<User> getCurrentUser() async {
     try {
       final response = await apiClient.get(ApiEndpoints.me);
-      return User.fromJson(response.data);
+      
+      // Backend returns { success: true, data: { user } }
+      final responseData = response.data;
+      final actualData = responseData['data'] ?? responseData;
+      
+      return User.fromJson(actualData);
     } catch (e) {
       throw Exception('Error al obtener usuario actual: $e');
     }

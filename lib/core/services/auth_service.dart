@@ -34,6 +34,13 @@ class AuthService {
     return response.user;
   }
 
+  // Login with social (Google/Facebook via Firebase)
+  Future<User> loginWithSocial(String firebaseToken, String provider) async {
+    final response = await _repository.loginWithFirebase(firebaseToken);
+    await _saveAuthData(response);
+    return response.user;
+  }
+
   // Register
   Future<User> register({
     required String email,
