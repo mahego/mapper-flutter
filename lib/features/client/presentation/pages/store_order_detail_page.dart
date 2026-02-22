@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 
 /// Detalle de pedido de tienda (ruta /cliente/store-order/:id) – paridad Angular.
@@ -17,7 +18,7 @@ class StoreOrderDetailPage extends StatelessWidget {
             children: [
               AppBar(
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: const Icon(AppIcons.arrowBack, color: Colors.white),
                   onPressed: () => context.go('/requests'),
                 ),
                 title: const Text('Pedido de tienda', style: TextStyle(color: Colors.white)),
@@ -31,7 +32,7 @@ class StoreOrderDetailPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long, size: 64, color: Colors.white.withOpacity(0.5)),
+                        Icon(AppIcons.receipt, size: 64, color: Colors.white.withOpacity(0.5)),
                         const SizedBox(height: 16),
                         Text(
                           'Pedido #$orderId',

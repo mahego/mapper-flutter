@@ -8,6 +8,7 @@ import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/services/storage_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../domain/repositories/request_repository.dart';
 
 class ClientDashboardPage extends StatefulWidget {
@@ -179,7 +180,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                                         }
                                       },
                                       icon: Icon(
-                                        Icons.notifications_outlined,
+                                        AppIcons.notificationsOutline,
                                         color: Colors.white.withOpacity(0.8),
                                         size: 26,
                                       ),
@@ -209,7 +210,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                                 IconButton(
                                   onPressed: () => setState(() => _drawerOpen = !_drawerOpen),
                                   icon: Icon(
-                                    Icons.menu,
+                                    AppIcons.menu,
                                     color: Colors.white.withOpacity(0.8),
                                     size: 28,
                                   ),
@@ -339,7 +340,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         ),
                       ),
                       _drawerLink(
-                        icon: Icons.add_circle_outline,
+                        icon: AppIcons.addCircle,
                         label: 'Nueva solicitud',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -347,7 +348,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         },
                       ),
                       _drawerLink(
-                        icon: Icons.assignment,
+                        icon: AppIcons.assignment,
                         label: 'Mis solicitudes',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -355,7 +356,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         },
                       ),
                       _drawerLink(
-                        icon: Icons.location_on_outlined,
+                        icon: AppIcons.locationOn,
                         label: 'Tracking',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -363,7 +364,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         },
                       ),
                       _drawerLink(
-                        icon: Icons.gavel,
+                        icon: AppIcons.gavel,
                         label: 'Subastas',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -371,7 +372,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         },
                       ),
                       _drawerLink(
-                        icon: Icons.person_outline,
+                        icon: AppIcons.personOutline,
                         label: 'Mi Perfil',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -382,7 +383,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                       Divider(color: Colors.white.withOpacity(0.1), height: 1),
                       const SizedBox(height: 12),
                       _drawerLink(
-                        icon: Icons.refresh,
+                        icon: AppIcons.refresh,
                         label: 'Refrescar',
                         onTap: () {
                           setState(() => _drawerOpen = false);
@@ -391,7 +392,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         },
                       ),
                       _drawerLink(
-                        icon: Icons.logout,
+                        icon: AppIcons.logout,
                         label: 'Cerrar sesión',
                         isLogout: true,
                         onTap: () {
@@ -477,22 +478,22 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
           childAspectRatio: 1.1,
           children: [
             _ActionCard(
-              icon: Icons.add_circle_outline,
+              icon: AppIcons.addCircle,
               label: 'Nueva solicitud',
               onTap: () => context.push('/requests/new'),
             ),
             _ActionCard(
-              icon: Icons.assignment,
+              icon: AppIcons.assignment,
               label: 'Mis solicitudes',
               onTap: () => context.push('/requests'),
             ),
             _ActionCard(
-              icon: Icons.map,
+              icon: AppIcons.map,
               label: 'Tracking',
               onTap: () => context.push('/cliente/tracking'),
             ),
             _ActionCard(
-              icon: Icons.person,
+              icon: AppIcons.person,
               label: 'Mi Perfil',
               onTap: () => context.push('/profile'),
             ),
@@ -517,7 +518,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => context.push('/requests/new'),
-              icon: const Icon(Icons.add, size: 20),
+              icon: const Icon(AppIcons.add, size: 20),
               label: const Text('Crear nueva solicitud'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFf97316),
@@ -539,7 +540,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         const SizedBox(height: 20),
         Row(
           children: [
-            Icon(Icons.import_export, color: Colors.amber.shade400, size: 24),
+            Icon(AppIcons.importExport, color: Colors.amber.shade400, size: 24),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,7 +574,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                       style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 6),
-                    Icon(Icons.chevron_right, size: 14, color: Colors.white.withOpacity(0.6)),
+                    Icon(AppIcons.chevronRight, size: 14, color: Colors.white.withOpacity(0.6)),
                   ],
                 ),
               ),
@@ -592,7 +593,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         const SizedBox(height: 16),
         Row(
           children: [
-            Icon(Icons.store_outlined, color: Colors.cyan.shade400, size: 24),
+            Icon(AppIcons.store, color: Colors.cyan.shade400, size: 24),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,7 +617,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
           decoration: InputDecoration(
             hintText: 'Buscar tiendas...',
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-            prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 20),
+            prefixIcon: Icon(AppIcons.search, color: Colors.white.withOpacity(0.5), size: 20),
             filled: true,
             fillColor: Colors.white.withOpacity(0.08),
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -653,7 +654,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.store, color: Colors.white.withOpacity(0.6), size: 22),
+                      child: Icon(AppIcons.store, color: Colors.white.withOpacity(0.6), size: 22),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -736,7 +737,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         borderRadius: BorderRadius.circular(16),
         child: Row(
           children: [
-            Icon(Icons.person_outline, color: const Color(0xFF06b6d4).withOpacity(0.8)),
+            Icon(AppIcons.personOutline, color: const Color(0xFF06b6d4).withOpacity(0.8)),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
@@ -744,7 +745,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
-            const Icon(Icons.edit, size: 18, color: Color(0xFFf97316)),
+            const Icon(AppIcons.edit, size: 18, color: Color(0xFFf97316)),
           ],
         ),
       ),

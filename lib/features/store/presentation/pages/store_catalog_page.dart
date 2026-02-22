@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/store_bottom_nav.dart';
 import '../../../../core/network/api_client.dart';
@@ -113,7 +114,7 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
                   labelText: 'Código de Barras',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
+                    icon: const Icon(AppIcons.qrCodeScanner),
                     onPressed: () async {
                       final code = await BarcodeScannerService.scanBarcode(context);
                       if (code != null) {
@@ -252,7 +253,7 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
                     onChanged: (value) => setState(() => _searchQuery = value),
                     decoration: InputDecoration(
                       hintText: 'Buscar productos...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: const Icon(AppIcons.search),
                       filled: true,
                       fillColor: const Color(0xFFf1f5f9),
                       border: OutlineInputBorder(
@@ -266,7 +267,7 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
                 FloatingActionButton(
                   onPressed: () => _showProductDialog(),
                   backgroundColor: const Color(0xFF06b6d4),
-                  child: const Icon(Icons.add, color: Colors.white),
+                  child: const Icon(AppIcons.add, color: Colors.white),
                 ),
               ],
             ),

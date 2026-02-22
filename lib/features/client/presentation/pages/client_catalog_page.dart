@@ -7,6 +7,7 @@ import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/theme/app_icons.dart';
 
 /// Catálogo de una tienda para el cliente con soporte de carrito.
 /// 
@@ -345,7 +346,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                 IconButton(
                                   onPressed: _cartItemCount > 0 ? _showCartSummary : null,
                                   icon: Icon(
-                                    Icons.shopping_cart_outlined,
+                                    AppIcons.shoppingCart,
                                     color: _cartItemCount > 0 ? const Color(0xFF10b981) : Colors.white.withOpacity(0.5),
                                   ),
                                 ),
@@ -489,7 +490,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                                             errorBuilder: (context, error, stackTrace) {
                                                               return Center(
                                                                 child: Icon(
-                                                                  Icons.shopping_bag_outlined,
+                                                                  AppIcons.shoppingBag,
                                                                   size: 48,
                                                                   color: Colors.white.withOpacity(0.3),
                                                                 ),
@@ -498,7 +499,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                                           )
                                                         : Center(
                                                             child: Icon(
-                                                              Icons.shopping_bag_outlined,
+                                                              AppIcons.shoppingBag,
                                                               size: 48,
                                                               color: Colors.white.withOpacity(0.3),
                                                             ),
@@ -526,7 +527,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                                           mainAxisSize: MainAxisSize.min,
                                                           children: [
                                                             const Icon(
-                                                              Icons.shopping_cart,
+                                                              AppIcons.shoppingCart,
                                                               color: Colors.white,
                                                               size: 14,
                                                             ),
@@ -626,7 +627,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                                                   border: Border.all(color: const Color(0xFF06b6d4)),
                                                                 ),
                                                                 child: const Icon(
-                                                                  Icons.add_shopping_cart,
+                                                                  AppIcons.shoppingCart,
                                                                   color: Color(0xFF06b6d4),
                                                                   size: 20,
                                                                 ),
@@ -726,7 +727,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                         context.go('/dashboard/cliente');
                         setState(() => _drawerOpen = false);
                       }),
-                      _drawerLink('Mi Carrito', Icons.shopping_cart_outlined, () {
+                      _drawerLink('Mi Carrito', AppIcons.shoppingCart, () {
                         _showCartSummary();
                         setState(() => _drawerOpen = false);
                       }),
@@ -823,7 +824,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                       children: [
                         IconButton(
                           onPressed: quantity > 0 ? () => setDialogState(() => quantity--) : null,
-                          icon: const Icon(Icons.remove, color: Color(0xFF06b6d4)),
+                          icon: const Icon(AppIcons.minus, color: Color(0xFF06b6d4)),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -842,7 +843,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                         ),
                         IconButton(
                           onPressed: () => setDialogState(() => quantity++),
-                          icon: const Icon(Icons.add, color: Color(0xFF06b6d4)),
+                          icon: const Icon(AppIcons.add, color: Color(0xFF06b6d4)),
                         ),
                       ],
                     ),
@@ -958,7 +959,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                               errorBuilder: (context, error, stackTrace) {
                                 return Center(
                                   child: Icon(
-                                    Icons.shopping_bag_outlined,
+                                    AppIcons.shoppingBag,
                                     size: 80,
                                     color: Colors.white.withOpacity(0.3),
                                   ),
@@ -967,7 +968,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                             )
                           : Center(
                               child: Icon(
-                                Icons.shopping_bag_outlined,
+                                AppIcons.shoppingBag,
                                 size: 80,
                                 color: Colors.white.withOpacity(0.3),
                               ),
@@ -1004,7 +1005,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.shopping_cart, color: Colors.white, size: 16),
+                              const Icon(AppIcons.shoppingCart, color: Colors.white, size: 16),
                               const SizedBox(width: 6),
                               Text(
                                 '$inCart en carrito',
@@ -1132,7 +1133,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                       Navigator.pop(context);
                       _showAddToCartDialog(productId, name, price);
                     },
-                    icon: const Icon(Icons.add_shopping_cart, size: 20),
+                    icon: const Icon(AppIcons.shoppingCart, size: 20),
                     label: Text(inCart > 0 ? 'Modificar cantidad' : 'Agregar al carrito'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF06b6d4),

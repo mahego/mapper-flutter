@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/service_request.dart';
+import '../../../../../core/theme/app_icons.dart';
 
 class ServiceRequestCard extends StatelessWidget {
   final ServiceRequest request;
@@ -88,7 +89,7 @@ class ServiceRequestCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.location_on_outlined,
+                  AppIcons.locationOn,
                   color: Colors.white.withOpacity(0.6),
                   size: 16,
                 ),
@@ -110,7 +111,7 @@ class ServiceRequestCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.flag_outlined,
+                  AppIcons.flagOutline,
                   color: Colors.white.withOpacity(0.6),
                   size: 16,
                 ),

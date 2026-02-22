@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/liquid_glass_card.dart';
+import '../theme/app_icons.dart';
 
 /// Widget reutilizable para mostrar errores en estado del UI
 /// Proporciona estructura consistente para mostrar errores con iconografía
@@ -17,7 +18,7 @@ class ErrorStateCard extends StatelessWidget {
     required this.message,
     this.title,
     this.onRetry,
-    this.icon = Icons.error_outline,
+    this.icon = AppIcons.errorOutline,
     this.backgroundColor,
     this.textColor,
     this.showIcon = true,
@@ -66,7 +67,7 @@ class ErrorStateCard extends StatelessWidget {
               padding: const EdgeInsets.only(top: 20),
               child: ElevatedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(AppIcons.refresh),
                 label: const Text('Reintentar'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.withOpacity(0.3),
@@ -167,7 +168,7 @@ class ErrorBanner extends StatelessWidget {
       child: Row(
         children: [
           const Icon(
-            Icons.warning_amber_rounded,
+            AppIcons.warning,
             color: Colors.red,
             size: 20,
           ),
@@ -207,7 +208,7 @@ class ErrorBanner extends StatelessWidget {
             GestureDetector(
               onTap: onClose,
               child: Icon(
-                Icons.close,
+                AppIcons.close,
                 color: Colors.white.withOpacity(0.6),
                 size: 18,
               ),

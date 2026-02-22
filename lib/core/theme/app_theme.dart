@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:liquid_glass/liquid_glass.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Tokens de diseño extraídos de fletapp-angular (styles.scss, componentes).
+/// Integrado con liquid_glass package para efectos glassmorphism mejorados.
 class AppTheme {
   // === Glass (Angular :root) ===
   static const Color glassSurface = Color(0x14FFFFFF); // rgba(255,255,255,0.08)
@@ -38,6 +41,32 @@ class AppTheme {
   static const Color errorColor = Color(0xFFEF4444);
   static const Color successColor = Color(0xFF22C55E);
   static const Color warningColor = Color(0xFFF59E0B);
+
+  // Liquid Glass Configuration
+  static LiquidGlassConfig get liquidGlassConfig => LiquidGlassConfig(
+    blur: glassBlur,
+    opacity: glassSurfaceOpacity,
+    borderOpacity: glassBorderOpacity,
+    primaryColor: primaryColor,
+    accentColor: accentCyan,
+  );
+
+  // Glass Decoration Helper
+  static BoxDecoration glassDecoration({
+    double? borderRadius,
+    Color? borderColor,
+    double? blur,
+  }) {
+    return BoxDecoration(
+      color: glassSurface,
+      borderRadius: BorderRadius.circular(borderRadius ?? 16),
+      border: Border.all(
+        color: borderColor ?? white.withOpacity(glassBorderOpacity),
+        width: 1,
+      ),
+      backgroundBlendMode: BlendMode.overlay,
+    );
+  }
   
   // Light Theme (Optional for now, focusing on Dark "Tropical" Theme)
   static ThemeData get lightTheme {

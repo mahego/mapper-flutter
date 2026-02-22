@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../theme/app_icons.dart';
 
 class BarcodeScannerService {
   /// Opens barcode scanner with camera and returns the scanned code
@@ -72,7 +73,7 @@ class _BarcodeScannerPageState extends State<_BarcodeScannerPage> {
         actions: [
           IconButton(
             icon: Icon(
-              _controller.torchEnabled ? Icons.flash_on : Icons.flash_off,
+              _controller.torchEnabled ? AppIcons.flashOn : AppIcons.flashOff,
               color: Colors.white,
             ),
             onPressed: _toggleTorch,

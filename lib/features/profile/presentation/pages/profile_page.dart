@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
@@ -193,7 +194,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       _markNotificationsAsRead();
                                     }
                                   },
-                                  icon: const Icon(Icons.notifications, color: Colors.white),
+                                  icon: const Icon(AppIcons.notifications, color: Colors.white),
                                 ),
                                 if (_unreadNotificationsCount > 0)
                                   Positioned(
@@ -222,7 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               onPressed: () {
                                 setState(() => _drawerOpen = !_drawerOpen);
                               },
-                              icon: const Icon(Icons.menu, color: Colors.white),
+                              icon: const Icon(AppIcons.menu, color: Colors.white),
                             ),
                           ],
                         ),
@@ -241,7 +242,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 CircleAvatar(
                                   radius: 44,
                                   backgroundColor: Colors.white.withOpacity(0.15),
-                                  child: const Icon(Icons.person, size: 44, color: Colors.white70),
+                                  child: const Icon(AppIcons.person, size: 44, color: Colors.white70),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
@@ -260,7 +261,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 // Collapsible panels
                                 _buildCollapsiblePanel(
                                   title: 'Datos Personales',
-                                  icon: Icons.person_outline,
+                                  icon: AppIcons.personOutline,
                                   isExpanded: _expandPersonal,
                                   onTap: () => setState(() => _expandPersonal = !_expandPersonal),
                                   child: _buildPersonalDataPanel(),
@@ -268,7 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 const SizedBox(height: 12),
                                 _buildCollapsiblePanel(
                                   title: 'Direcciones Guardadas',
-                                  icon: Icons.location_on_outlined,
+                                  icon: AppIcons.locationOn,
                                   isExpanded: _expandAddresses,
                                   onTap: () => setState(() => _expandAddresses = !_expandAddresses),
                                   child: _buildAddressesPanel(),
@@ -276,7 +277,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 const SizedBox(height: 12),
                                 _buildCollapsiblePanel(
                                   title: 'Configuración',
-                                  icon: Icons.settings_outlined,
+                                  icon: AppIcons.settingsOutline,
                                   isExpanded: _expandSettings,
                                   onTap: () => setState(() => _expandSettings = !_expandSettings),
                                   child: _buildSettingsPanel(),
@@ -286,7 +287,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
                                     onPressed: _logout,
-                                    icon: const Icon(Icons.logout, size: 20),
+                                    icon: const Icon(AppIcons.logout, size: 20),
                                     label: const Text('Cerrar sesión'),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.redAccent,
@@ -365,7 +366,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     Icon(
-                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      isExpanded ? AppIcons.expandLess : AppIcons.expandMore,
                       color: Colors.white.withOpacity(0.7),
                     ),
                   ],
@@ -392,17 +393,17 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildInfoField('Nombre', _name.isNotEmpty ? _name : 'No especificado', Icons.person),
+        _buildInfoField('Nombre', _name.isNotEmpty ? _name : 'No especificado', AppIcons.person),
         const SizedBox(height: 12),
-        _buildInfoField('Email', _email, Icons.email),
+        _buildInfoField('Email', _email, AppIcons.email),
         const SizedBox(height: 12),
         _buildInfoField(
           'Teléfono',
           _phone != null && _phone!.isNotEmpty ? _phone! : 'No especificado',
-          Icons.phone,
+          AppIcons.phone,
         ),
         const SizedBox(height: 12),
-        _buildInfoField('Rol', _roleLabel.isNotEmpty ? _roleLabel : 'No especificado', Icons.badge),
+        _buildInfoField('Rol', _roleLabel.isNotEmpty ? _roleLabel : 'No especificado', AppIcons.badge),
       ],
     );
   }
@@ -452,7 +453,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Row(
                         children: [
                           Icon(
-                            Icons.location_on,
+                            AppIcons.locationOn,
                             color: const Color(0xFF06b6d4),
                             size: 18,
                           ),
@@ -526,7 +527,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-              Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.5)),
+              Icon(AppIcons.chevronRight, color: Colors.white.withOpacity(0.5)),
             ],
           ),
         ),
@@ -567,7 +568,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ],
                   ),
-                  Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.5)),
+                  Icon(AppIcons.lockOutline, color: Colors.white.withOpacity(0.5)),
                 ],
               ),
             ),
@@ -680,7 +681,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         decoration: InputDecoration(
                           hintText: 'Contraseña actual',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          prefixIcon: const Icon(Icons.lock, color: Color(0xFF06b6d4)),
+                          prefixIcon: const Icon(AppIcons.lock, color: Color(0xFF06b6d4)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -731,7 +732,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         decoration: InputDecoration(
                           hintText: 'Nueva contraseña',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          prefixIcon: const Icon(Icons.lock_open, color: Color(0xFF06b6d4)),
+                          prefixIcon: const Icon(AppIcons.lockOpen, color: Color(0xFF06b6d4)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -789,7 +790,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         decoration: InputDecoration(
                           hintText: 'Confirmar contraseña',
                           hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                          prefixIcon: const Icon(Icons.check_circle, color: Color(0xFF06b6d4)),
+                          prefixIcon: const Icon(AppIcons.checkCircle, color: Color(0xFF06b6d4)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
@@ -997,7 +998,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: Colors.white.withOpacity(0.15),
-                        child: const Icon(Icons.person, color: Colors.white70),
+                        child: const Icon(AppIcons.person, color: Colors.white70),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1024,29 +1025,29 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     children: [
-                      _drawerLink('Ir al Dashboard', Icons.dashboard_outlined, () {
+                      _drawerLink('Ir al Dashboard', AppIcons.dashboardOutline, () {
                         context.go('/dashboard/cliente');
                         setState(() => _drawerOpen = false);
                       }),
-                      _drawerLink('Mi Perfil', Icons.person_outline, () {
+                      _drawerLink('Mi Perfil', AppIcons.personOutline, () {
                         setState(() => _drawerOpen = false);
                       }),
-                      _drawerLink('Mis Solicitudes', Icons.assignment_outlined, () {
+                      _drawerLink('Mis Solicitudes', AppIcons.assignment, () {
                         context.go('/solicitudes');
                         setState(() => _drawerOpen = false);
                       }),
-                      _drawerLink('Tracking', Icons.location_on_outlined, () {
+                      _drawerLink('Tracking', AppIcons.locationOn, () {
                         context.go('/tracking');
                         setState(() => _drawerOpen = false);
                       }),
-                      _drawerLink('Refrescar', Icons.refresh, () {
+                      _drawerLink('Refrescar', AppIcons.refresh, () {
                         _loadProfile();
                         _loadAddresses();
                         _loadNotificationCount();
                         setState(() => _drawerOpen = false);
                       }),
                       Divider(color: Colors.white12, height: 24, indent: 16, endIndent: 16),
-                      _drawerLink('Cerrar sesión', Icons.logout, _logout,
+                      _drawerLink('Cerrar sesión', AppIcons.logout, _logout,
                           color: const Color(0xFFf97316)),
                     ],
                   ),

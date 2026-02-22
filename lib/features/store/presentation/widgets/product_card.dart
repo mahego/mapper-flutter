@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/store_product.dart';
+import '../../../../../core/theme/app_icons.dart';
 
 class ProductCard extends StatelessWidget {
   final StoreProduct product;
@@ -52,11 +53,11 @@ class ProductCard extends StatelessWidget {
                           product.imageUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.inventory_2, color: Colors.grey);
+                            return const Icon(AppIcons.inventory, color: Colors.grey);
                           },
                         ),
                       )
-                    : const Icon(Icons.inventory_2, color: Colors.grey),
+                    : const Icon(AppIcons.inventory, color: Colors.grey),
               ),
               const SizedBox(width: 12),
               // Info
@@ -121,7 +122,7 @@ class ProductCard extends StatelessWidget {
               // Actions
               if (onEdit != null || onDelete != null)
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
+                  icon: const Icon(AppIcons.moreVert),
                   onSelected: (value) {
                     if (value == 'edit' && onEdit != null) {
                       onEdit!();
@@ -135,7 +136,7 @@ class ProductCard extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 20),
+                            Icon(AppIcons.edit, size: 20),
                             SizedBox(width: 8),
                             Text('Editar'),
                           ],
@@ -146,7 +147,7 @@ class ProductCard extends StatelessWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            Icon(AppIcons.delete, size: 20, color: Colors.red),
                             SizedBox(width: 8),
                             Text('Eliminar', style: TextStyle(color: Colors.red)),
                           ],

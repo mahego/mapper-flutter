@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_icons.dart';
 
 /// Top bar with notification and menu buttons in Liquid Glass style
 /// Positioned at top-right corner with transparent buttons
@@ -29,7 +30,7 @@ class LiquidGlassAppBar extends StatelessWidget {
           children: [
             if (showNotificationButton) ...[
               _IconButton(
-                icon: Icons.notifications_outlined,
+                icon: AppIcons.notificationsOutline,
                 onTap: onNotificationTap,
                 badge: unreadCount > 0 ? unreadCount : null,
               ),
@@ -37,7 +38,7 @@ class LiquidGlassAppBar extends StatelessWidget {
             ],
             if (showMenuButton)
               _IconButton(
-                icon: Icons.menu,
+                icon: AppIcons.menu,
                 onTap: onMenuTap,
               ),
           ],

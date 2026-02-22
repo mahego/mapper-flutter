@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../theme/app_icons.dart';
 
 /// Social Login Button with Liquid Glass style
 /// Matches Angular's design: glass background, backdrop blur, and icon
@@ -102,7 +103,7 @@ class SocialLoginButton extends StatelessWidget {
 
   Widget _buildFacebookIcon() {
     return const Icon(
-      Icons.facebook,
+      AppIcons.facebook,
       color: Colors.white,
       size: 20,
     );

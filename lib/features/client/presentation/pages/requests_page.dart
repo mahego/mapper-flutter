@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/client_bottom_nav.dart';
 import '../../domain/repositories/request_repository.dart';
@@ -25,9 +26,9 @@ class _RequestsPageState extends State<RequestsPage> {
   String _filterStatus = 'all';
 
   static const _typeFilters = [
-    ('all', 'Todos', Icons.list_alt),
-    ('service', 'Servicios', Icons.local_shipping),
-    ('store', 'Tiendas', Icons.store),
+    ('all', 'Todos', AppIcons.listAlt),
+    ('service', 'Servicios', AppIcons.localShipping),
+    ('store', 'Tiendas', AppIcons.store),
   ];
 
   static const _statusFilters = [
@@ -111,7 +112,7 @@ class _RequestsPageState extends State<RequestsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/requests/new'),
         backgroundColor: const Color(0xFFf97316),
-        icon: const Icon(Icons.add),
+        icon: const Icon(AppIcons.add),
         label: const Text('Nueva Solicitud'),
       ),
       body: Column(
@@ -225,7 +226,7 @@ class _RequestsPageState extends State<RequestsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.withOpacity(0.7)),
+            Icon(AppIcons.errorOutline, size: 64, color: Colors.red.withOpacity(0.7)),
             const SizedBox(height: 16),
             Text(
               _error,
@@ -263,7 +264,7 @@ class _RequestsPageState extends State<RequestsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 80, color: Colors.white.withOpacity(0.3)),
+            Icon(AppIcons.inbox, size: 80, color: Colors.white.withOpacity(0.3)),
             const SizedBox(height: 16),
             Text(
               'No hay solicitudes con estado "$statusLabel"',
@@ -273,7 +274,7 @@ class _RequestsPageState extends State<RequestsPage> {
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () => context.push('/requests/new'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(AppIcons.add),
               label: const Text('Crear una nueva solicitud'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFf97316),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/store_order.dart';
+import '../../../../../core/theme/app_icons.dart';
 
 class OrderCard extends StatelessWidget {
   final StoreOrder order;
@@ -82,7 +83,7 @@ class OrderCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
-                          Icons.shopping_bag,
+                          AppIcons.shoppingBag,
                           color: Color(0xFF06b6d4),
                           size: 20,
                         ),

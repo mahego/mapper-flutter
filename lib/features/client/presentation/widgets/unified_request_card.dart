@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../domain/repositories/request_repository.dart';
+import '../../../../../core/theme/app_icons.dart';
 
 class UnifiedRequestCard extends StatelessWidget {
   final UnifiedRequestItem item;
@@ -108,7 +109,7 @@ class UnifiedRequestCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.place, size: 18, color: Colors.white.withOpacity(0.6)),
+                Icon(AppIcons.place, size: 18, color: Colors.white.withOpacity(0.6)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Column(
