@@ -3,7 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_card.dart';
+import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
+import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../domain/repositories/request_repository.dart';
 
@@ -17,6 +20,7 @@ class ClientDashboardPage extends StatefulWidget {
 class _ClientDashboardPageState extends State<ClientDashboardPage> {
   final _requestRepository = RequestRepository(ApiClient());
   final _storage = StorageService();
+  late final _notificationService = NotificationService(apiClient: ApiClient());
 
   String _userName = 'Cliente';
   double _userLat = 0;
@@ -29,6 +33,9 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
   String _searchQuery = '';
   static const int _initialStoresCount = 8;
   bool _showAllStores = false;
+  bool _drawerOpen = false;
+  bool _showNotifications = false;
+  int _unreadNotificationsCount = 0;
 
   @override
   void initState() {
@@ -36,6 +43,19 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
     _userName = _storage.getUserName() ?? 'Cliente';
     _getLocationAndLoad();
     _loadRecentOrderStores();
+    _loadNotificationCount();
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() => _unreadNotificationsCount = count);
+      }
+    } catch (e) {
+      print('Error loading notification count: $e');
+      // Keep the default value if API fails
+    }
   }
 
   Future<void> _getLocationAndLoad() async {
@@ -104,81 +124,362 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LiquidGlassBackground(
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                expandedHeight: 120,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Panel de cliente',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Hola, $_userName',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        Text(
-                          'Gestiona tus solicitudes, tiendas y seguimiento',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7)),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
+      body: Stack(
+        children: [
+          // Main content
+          LiquidGlassBackground(
+            child: SafeArea(
+              child: CustomScrollView(
+                slivers: [
+                  // Header simple
+                  SliverAppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                _loadStores();
-                                _loadRecentOrderStores();
-                              },
-                              icon: Icon(Icons.refresh, color: Colors.white.withOpacity(0.8), size: 22),
-                              tooltip: 'Refrescar',
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Hola, $_userName',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Gestiona tus servicios',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            IconButton(
-                              onPressed: () => context.go('/login'),
-                              icon: Icon(Icons.logout, color: Colors.white.withOpacity(0.8), size: 22),
-                              tooltip: 'Cerrar sesión',
+                            Row(
+                              children: [
+                                Stack(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() => _showNotifications = !_showNotifications);
+                                        if (_showNotifications) {
+                                          _markNotificationsAsRead();
+                                        }
+                                      },
+                                      icon: Icon(
+                                        Icons.notifications_outlined,
+                                        color: Colors.white.withOpacity(0.8),
+                                        size: 26,
+                                      ),
+                                    ),
+                                    if (_unreadNotificationsCount > 0)
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFf97316),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            '$_unreadNotificationsCount',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                IconButton(
+                                  onPressed: () => setState(() => _drawerOpen = !_drawerOpen),
+                                  icon: Icon(
+                                    Icons.menu,
+                                    color: Colors.white.withOpacity(0.8),
+                                    size: 28,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
+                    ),
+                    expandedHeight: 80,
+                  ),
+
+                  // Contenido principal
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          if (_loadingStores)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                child: Text(
+                                  'Cargando tiendas...',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                                ),
+                              ),
+                            ),
+                          if (!_loadingStores && _filteredStores.isEmpty) _buildNoStoresCta(),
+                          if (_hasStoresToShow && _recentOrderStores.isNotEmpty) _buildVolverAPedir(),
+                          if (_hasStoresToShow) _buildTiendasDisponibles(),
+                          const SizedBox(height: 80), // Espacio para bottom nav en mobile
+                        ],
+                      ),
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          // Drawer lateral
+          _buildDrawer(),
+
+          // Panel de notificaciones
+          if (_showNotifications)
+            Positioned(
+              top: 100,
+              right: 16,
+              child: GestureDetector(
+                onTap: () {}, // Prevent closing when tapping inside
+                child: NotificationsPanel(
+                  notificationService: _notificationService,
+                  unreadCount: _unreadNotificationsCount,
+                  onNotificationTap: () {
+                    // Mark as read when user views notification
+                    _markNotificationsAsRead();
+                    setState(() => _showNotifications = false);
+                  },
                 ),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    // Ocultar en desktop (width >= 768)
+    if (MediaQuery.of(context).size.width >= 768) {
+      return const SizedBox.shrink();
+    }
+
+    return LiquidGlassBottomNav(
+      items: const [
+        BottomNavItem(
+          label: 'Inicio',
+          icon: Icons.home_outlined,
+          route: '/dashboard/cliente',
+        ),
+        BottomNavItem(
+          label: 'Solicitudes',
+          icon: Icons.assignment_outlined,
+          route: '/requests',
+        ),
+        BottomNavItem(
+          label: 'Tracking',
+          icon: Icons.location_on_outlined,
+          route: '/cliente/tracking',
+        ),
+        BottomNavItem(
+          label: 'Perfil',
+          icon: Icons.person_outline,
+          route: '/profile',
+        ),
+      ],
+      currentIndex: 0,
+      onTap: (index) {
+        final routes = [
+          '/dashboard/cliente',
+          '/requests',
+          '/cliente/tracking',
+          '/profile',
+        ];
+        context.go(routes[index]);
+      },
+      mobileOnly: true,
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Stack(
+      children: [
+        if (_drawerOpen)
+          GestureDetector(
+            onTap: () => setState(() => _drawerOpen = false),
+            child: AnimatedOpacity(
+              opacity: _drawerOpen ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Container(
+                color: Colors.black.withOpacity(0.35),
+              ),
+            ),
+          ),
+        Positioned(
+          top: 0,
+          right: 0,
+          bottom: 0,
+          child: AnimatedSlide(
+            offset: _drawerOpen ? Offset.zero : const Offset(1, 0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: SafeArea(
+              left: false,
+              child: Container(
+                width: 280,
+                color: Colors.white.withOpacity(0.05),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 8),
-                      _buildQuickActions(),
-                      const SizedBox(height: 24),
-                      if (_loadingStores)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Text('Cargando tiendas...', style: TextStyle(color: Colors.white.withOpacity(0.7))),
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Menú',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.6),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Hola, $_userName',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
                         ),
-                      if (!_loadingStores && _filteredStores.isEmpty) _buildNoStoresCta(),
-                      if (_hasStoresToShow && _recentOrderStores.isNotEmpty) _buildVolverAPedir(),
-                      if (_hasStoresToShow) _buildTiendasDisponibles(),
-                      const SizedBox(height: 24),
-                      _buildDatosCuenta(),
-                      const SizedBox(height: 32),
+                      ),
+                      _drawerLink(
+                        icon: Icons.add_circle_outline,
+                        label: 'Nueva solicitud',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.push('/requests/new');
+                        },
+                      ),
+                      _drawerLink(
+                        icon: Icons.assignment,
+                        label: 'Mis solicitudes',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.push('/requests');
+                        },
+                      ),
+                      _drawerLink(
+                        icon: Icons.location_on_outlined,
+                        label: 'Tracking',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.push('/cliente/tracking');
+                        },
+                      ),
+                      _drawerLink(
+                        icon: Icons.gavel,
+                        label: 'Subastas',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.push('/auctions');
+                        },
+                      ),
+                      _drawerLink(
+                        icon: Icons.person_outline,
+                        label: 'Mi Perfil',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.push('/profile');
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                      const SizedBox(height: 12),
+                      _drawerLink(
+                        icon: Icons.refresh,
+                        label: 'Refrescar',
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          _loadStores();
+                          _loadRecentOrderStores();
+                        },
+                      ),
+                      _drawerLink(
+                        icon: Icons.logout,
+                        label: 'Cerrar sesión',
+                        isLogout: true,
+                        onTap: () {
+                          setState(() => _drawerOpen = false);
+                          context.go('/login');
+                        },
+                      ),
                     ],
                   ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _drawerLink({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isLogout = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isLogout ? Colors.red.shade400 : Colors.white.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isLogout ? Colors.red.shade400 : Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -186,6 +487,20 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _markNotificationsAsRead() async {
+    if (_unreadNotificationsCount > 0) {
+      setState(() {
+        _unreadNotificationsCount = 0;
+      });
+      // Call API to mark all as read
+      try {
+        await _notificationService.markAllAsRead();
+      } catch (e) {
+        print('Error marking notifications as read: $e');
+      }
+    }
   }
 
   Widget _buildQuickActions() {
@@ -211,7 +526,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
               onTap: () => context.push('/requests/new'),
             ),
             _ActionCard(
-              icon: Icons.clipboard_list,
+              icon: Icons.assignment,
               label: 'Mis solicitudes',
               onTap: () => context.push('/requests'),
             ),
@@ -233,12 +548,12 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
 
   Widget _buildNoStoresCta() {
     return LiquidGlassCard(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Text(
             'No hay tiendas disponibles en tu área en este momento.',
-            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -251,8 +566,8 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFf97316),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -265,44 +580,51 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Row(
           children: [
-            Icon(Icons.replay, color: Colors.amber.shade400, size: 28),
-            const SizedBox(width: 8),
-            const Text(
-              'Volver a pedir',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+            Icon(Icons.import_export, color: Colors.amber.shade400, size: 24),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Volver a pedir',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+                Text(
+                  'Tiendas anteriores',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Tiendas donde ya pediste',
-          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7)),
         ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: _recentOrderStores.map((s) {
-            return ActionChip(
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(s.name),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, size: 16, color: Colors.white.withOpacity(0.6)),
-                ],
+            return GestureDetector(
+              onTap: () => context.push('/cliente/catalog/${s.id}'),
+              child: LiquidGlassCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      s.name,
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.chevron_right, size: 14, color: Colors.white.withOpacity(0.6)),
+                  ],
+                ),
               ),
-              backgroundColor: Colors.white.withOpacity(0.1),
-              side: BorderSide(color: Colors.white.withOpacity(0.2)),
-              labelStyle: const TextStyle(color: Colors.white),
-              onPressed: () => context.push('/cliente/catalog/${s.id}'),
             );
           }).toList(),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -311,68 +633,73 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         Row(
           children: [
-            Icon(Icons.store_outlined, color: Colors.cyan.shade400, size: 28),
-            const SizedBox(width: 8),
-            const Text(
-              'Tiendas disponibles',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
+            Icon(Icons.store_outlined, color: Colors.cyan.shade400, size: 24),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tiendas disponibles',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+                Text(
+                  'Explora las más cercanas',
+                  style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6)),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Explora las tiendas cercanas y haz tu compra',
-          style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.7)),
         ),
         const SizedBox(height: 12),
         TextField(
           onChanged: (v) => setState(() => _searchQuery = v),
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Buscar tiendas...',
             hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-            prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.5)),
+            prefixIcon: Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 20),
             filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
+            fillColor: Colors.white.withOpacity(0.08),
+            contentPadding: const EdgeInsets.symmetric(vertical: 10),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(
-          'Ordenadas por cercanía. Las más cercanas primero.',
-          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.6)),
+          'Por cercanía. Las más cercanas primero.',
+          style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.5)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         ListView.separated(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _displayedStores.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final store = _displayedStores[index];
             return LiquidGlassCard(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: InkWell(
                 onTap: () => context.push('/cliente/catalog/${store.id}'),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 child: Row(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.store, color: Colors.white.withOpacity(0.6)),
+                      child: Icon(Icons.store, color: Colors.white.withOpacity(0.6), size: 22),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +712,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                    fontSize: 13,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -394,14 +721,14 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                               if (store.distance != null)
                                 Text(
                                   '${store.distance!.toStringAsFixed(1)} km',
-                                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             store.address,
-                            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -410,16 +737,16 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFFf97316), Color(0xFF06b6d4)],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text('Ver Catálogo', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      child: const Text('Catálogo', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),
@@ -429,18 +756,18 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         ),
         if (_hasMoreStores || (_showAllStores && _filteredStores.length > _initialStoresCount))
           Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 10),
             child: Center(
               child: TextButton(
                 onPressed: () => setState(() => _showAllStores = !_showAllStores),
                 child: Text(
                   _showAllStores ? 'Ver menos' : 'Ver más (${_filteredStores.length - _initialStoresCount} más)',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
                 ),
               ),
             ),
           ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -453,7 +780,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
         borderRadius: BorderRadius.circular(16),
         child: Row(
           children: [
-            Icon(Icons.info_outline, color: const Color(0xFF06b6d4).withOpacity(0.8)),
+            Icon(Icons.person_outline, color: const Color(0xFF06b6d4).withOpacity(0.8)),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(

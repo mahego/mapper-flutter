@@ -229,9 +229,15 @@ class _NewRequestPageState extends State<NewRequestPage> {
       distance = _haversine(_originLat!, _originLng!, _destLat!, _destLng!);
     }
     _estimatedDistance = distance;
-    final config = _selectedService ?? _selectedCategory;
-    final base = config?.basePrice ?? 150;
-    final perKm = config?.pricePerKm ?? 12;
+    double base = 150;
+    double perKm = 12;
+    if (_selectedService != null) {
+      base = _selectedService!.basePrice;
+      perKm = _selectedService!.pricePerKm;
+    } else if (_selectedCategory != null) {
+      base = _selectedCategory!.basePrice;
+      perKm = _selectedCategory!.pricePerKm;
+    }
     _proposedPrice = base + (distance * perKm);
   }
 

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_card.dart';
+import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
+import '../../../../core/widgets/notifications_panel.dart';
 import '../../../client/domain/repositories/request_repository.dart';
 
 /// Perfil de usuario (paridad Angular ProfileComponent): datos y direcciones guardadas.
@@ -17,6 +20,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _authService = AuthService();
   final _requestRepository = RequestRepository(ApiClient());
+  late final _notificationService = NotificationService(apiClient: ApiClient());
 
   String _name = '';
   String _email = '';
@@ -27,12 +31,28 @@ class _ProfilePageState extends State<ProfilePage> {
 
   List<SavedAddressModel> _addresses = [];
   bool _addressesLoading = true;
+  
+  bool _drawerOpen = false;
+  bool _showNotifications = false;
+  int _unreadNotificationsCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
     _loadAddresses();
+    _loadNotificationCount();
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() => _unreadNotificationsCount = count);
+      }
+    } catch (e) {
+      print('Error loading notification count: $e');
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -81,6 +101,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (mounted) context.go('/login');
   }
 
+  Future<void> _markNotificationsAsRead() async {
+    if (_unreadNotificationsCount > 0) {
+      setState(() {
+        _unreadNotificationsCount = 0;
+      });
+      try {
+        await _notificationService.markAllAsRead();
+      } catch (e) {
+        print('Error marking notifications as read: $e');
+      }
+    }
+  }
+
   String get _roleLabel {
     switch (_role) {
       case 'cliente':
@@ -97,118 +130,359 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LiquidGlassBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              AppBar(
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.go('/dashboard/cliente'),
-                ),
-                title: const Text('Mi Perfil', style: TextStyle(color: Colors.white, fontSize: 18)),
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-              ),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF06b6d4)))
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
+      body: Stack(
+        children: [
+          LiquidGlassBackground(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Header con drawer y notificaciones
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Mi Perfil',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Row(
                           children: [
-                            const SizedBox(height: 16),
-                            CircleAvatar(
-                              radius: 44,
-                              backgroundColor: Colors.white.withOpacity(0.15),
-                              child: const Icon(Icons.person, size: 44, color: Colors.white70),
+                            // Bell icon con notificaciones
+                            Stack(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() => _showNotifications = !_showNotifications);
+                                    if (_unreadNotificationsCount > 0) {
+                                      _markNotificationsAsRead();
+                                    }
+                                  },
+                                  icon: const Icon(Icons.notifications, color: Colors.white),
+                                ),
+                                if (_unreadNotificationsCount > 0)
+                                  Positioned(
+                                    right: 8,
+                                    top: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFf97316),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        _unreadNotificationsCount.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _name.isNotEmpty ? _name : 'Usuario',
-                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            // Menu icon
+                            IconButton(
+                              onPressed: () {
+                                setState(() => _drawerOpen = !_drawerOpen);
+                              },
+                              icon: const Icon(Icons.menu, color: Colors.white),
                             ),
-                            if (_roleLabel.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(_roleLabel, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
-                            ],
-                            const SizedBox(height: 8),
-                            Text(
-                              _email,
-                              style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
-                            ),
-                            if (_phone != null && _phone!.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(_phone!, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
-                            ],
-                            if (_error != null) ...[
-                              const SizedBox(height: 16),
-                              Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
-                            ],
-                            const SizedBox(height: 24),
-                            LiquidGlassCard(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Content
+                  Expanded(
+                    child: _loading
+                        ? const Center(child: CircularProgressIndicator(color: Color(0xFF06b6d4)))
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 44,
+                                  backgroundColor: Colors.white.withOpacity(0.15),
+                                  child: const Icon(Icons.person, size: 44, color: Colors.white70),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _name.isNotEmpty ? _name : 'Usuario',
+                                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                                ),
+                                if (_roleLabel.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(_roleLabel, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
+                                ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  _email,
+                                  style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14),
+                                ),
+                                if (_phone != null && _phone!.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(_phone!, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
+                                ],
+                                if (_error != null) ...[
+                                  const SizedBox(height: 16),
+                                  Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                                ],
+                                const SizedBox(height: 24),
+                                LiquidGlassCard(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.location_on_outlined, color: Colors.white.withOpacity(0.8), size: 22),
-                                      const SizedBox(width: 8),
-                                      Text('Direcciones guardadas', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16, fontWeight: FontWeight.w600)),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.location_on_outlined, color: Colors.white.withOpacity(0.8), size: 22),
+                                          const SizedBox(width: 8),
+                                          Text('Direcciones guardadas', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      if (_addressesLoading)
+                                        const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Color(0xFF06b6d4), strokeWidth: 2))),
+                                      if (!_addressesLoading && _addresses.isEmpty)
+                                        Text('Sin direcciones guardadas.', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+                                      if (!_addressesLoading && _addresses.isNotEmpty)
+                                        ..._addresses.map((a) => Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withOpacity(0.06),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(a.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                                                    const SizedBox(height: 4),
+                                                    Text(a.address, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
+                                                  ],
+                                                ),
+                                              ),
+                                            )),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  if (_addressesLoading)
-                                    const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Color(0xFF06b6d4), strokeWidth: 2))),
-                                  if (!_addressesLoading && _addresses.isEmpty)
-                                    Text('Sin direcciones guardadas.', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
-                                  if (!_addressesLoading && _addresses.isNotEmpty)
-                                    ..._addresses.map((a) => Padding(
-                                          padding: const EdgeInsets.only(bottom: 8),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.06),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: Colors.white.withOpacity(0.1)),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(a.label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                                                const SizedBox(height: 4),
-                                                Text(a.address, style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
-                                              ],
-                                            ),
-                                          ),
-                                        )),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: _logout,
-                                icon: const Icon(Icons.logout, size: 20),
-                                label: const Text('Cerrar sesión'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.redAccent,
-                                  side: const BorderSide(color: Colors.redAccent),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
                                 ),
-                              ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _logout,
+                                    icon: const Icon(Icons.logout, size: 20),
+                                    label: const Text('Cerrar sesión'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.redAccent,
+                                      side: const BorderSide(color: Colors.redAccent),
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 80), // Space for bottom nav on mobile
+                              ],
                             ),
-                            const SizedBox(height: 32),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Drawer
+          _buildDrawer(),
+          // Notifications panel
+          if (_showNotifications)
+            Positioned(
+              top: 100,
+              right: 16,
+              child: GestureDetector(
+                onTap: () {},
+                child: NotificationsPanel(
+                  notificationService: _notificationService,
+                  unreadCount: _unreadNotificationsCount,
+                  onNotificationTap: () {
+                    _markNotificationsAsRead();
+                    setState(() => _showNotifications = false);
+                  },
+                ),
+              ),
+            ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      right: _drawerOpen ? 0 : -250,
+      top: 0,
+      bottom: 0,
+      width: 250,
+      child: Stack(
+        children: [
+          // Backdrop
+          if (_drawerOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _drawerOpen = false),
+                child: Container(color: Colors.black.withOpacity(0.3)),
+              ),
+            ),
+          // Drawer panel
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              border: Border(
+                left: BorderSide(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 1.5,
+                ),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Drawer header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white.withOpacity(0.15),
+                        child: const Icon(Icons.person, color: Colors.white70),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _name.isNotEmpty ? _name : 'Usuario',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              _roleLabel,
+                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                            ),
                           ],
                         ),
                       ),
-              ),
-            ],
+                    ],
+                  ),
+                ),
+                // Menu items
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    children: [
+                      _drawerLink('Ir al Dashboard', Icons.dashboard_outlined, () {
+                        context.go('/dashboard/cliente');
+                        setState(() => _drawerOpen = false);
+                      }),
+                      _drawerLink('Mi Perfil', Icons.person_outline, () {
+                        setState(() => _drawerOpen = false);
+                      }),
+                      _drawerLink('Mis Solicitudes', Icons.assignment_outlined, () {
+                        context.go('/solicitudes');
+                        setState(() => _drawerOpen = false);
+                      }),
+                      _drawerLink('Tracking', Icons.location_on_outlined, () {
+                        context.go('/tracking');
+                        setState(() => _drawerOpen = false);
+                      }),
+                      _drawerLink('Refrescar', Icons.refresh, () {
+                        _loadProfile();
+                        _loadAddresses();
+                        _loadNotificationCount();
+                        setState(() => _drawerOpen = false);
+                      }),
+                      Divider(color: Colors.white12, height: 24, indent: 16, endIndent: 16),
+                      _drawerLink('Cerrar sesión', Icons.logout, _logout,
+                          color: const Color(0xFFf97316)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _drawerLink(
+    String label,
+    IconData icon,
+    VoidCallback onTap, {
+    Color color = Colors.white,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        leading: Icon(icon, color: color.withOpacity(0.8)),
+        title: Text(label, style: TextStyle(color: color)),
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 768) return const SizedBox.shrink();
+
+    return LiquidGlassBottomNav(
+      items: const [
+        BottomNavItem(label: 'Inicio', icon: Icons.home_outlined, route: '/dashboard/cliente'),
+        BottomNavItem(label: 'Solicitudes', icon: Icons.assignment_outlined, route: '/solicitudes'),
+        BottomNavItem(label: 'Tracking', icon: Icons.location_on_outlined, route: '/tracking'),
+        BottomNavItem(label: 'Perfil', icon: Icons.person_outline, route: '/perfil'),
+      ],
+      currentIndex: 3,
+      onTap: (index) {
+        switch (index) {
+          case 0:
+            context.go('/dashboard/cliente');
+            break;
+          case 1:
+            context.go('/solicitudes');
+            break;
+          case 2:
+            context.go('/tracking');
+            break;
+          case 3:
+            break;
+        }
+      },
     );
   }
 }
