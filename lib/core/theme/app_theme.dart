@@ -42,15 +42,6 @@ class AppTheme {
   static const Color successColor = Color(0xFF22C55E);
   static const Color warningColor = Color(0xFFF59E0B);
 
-  // Liquid Glass Configuration
-  static LiquidGlassConfig get liquidGlassConfig => LiquidGlassConfig(
-    blur: glassBlur,
-    opacity: glassSurfaceOpacity,
-    borderOpacity: glassBorderOpacity,
-    primaryColor: primaryColor,
-    accentColor: accentCyan,
-  );
-
   // Glass Decoration Helper
   static BoxDecoration glassDecoration({
     double? borderRadius,
