@@ -40,6 +40,14 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _expandPersonal = true;
   bool _expandAddresses = false;
   bool _expandSettings = false;
+  
+  // Change password
+  bool _showChangePasswordDialog = false;
+  String _currentPassword = '';
+  String _newPassword = '';
+  String _confirmPassword = '';
+  bool _changingPassword = false;
+  String? _passwordError;
 
   @override
   void initState() {
@@ -514,6 +522,49 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _showChangePasswordDialog ? null : () => _showPasswordChangeDialog(),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withOpacity(0.1)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cambiar contraseña',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Actualizar tu contraseña',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Icon(Icons.lock_outline, color: Colors.white.withOpacity(0.5)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -584,6 +635,198 @@ class _ProfilePageState extends State<ProfilePage> {
             activeColor: const Color(0xFF06b6d4),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPasswordChangeDialog() {
+    setState(() => _showChangePasswordDialog = true);
+    _currentPassword = '';
+    _newPassword = '';
+    _confirmPassword = '';
+    _passwordError = null;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0f172a).withOpacity(0.95),
+              title: const Text(
+                'Cambiar contraseña',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Contraseña actual',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      prefixIcon: const Icon(Icons.lock, color: Color(0xFF06b6d4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                      ),
+                    ),
+                    onChanged: (value) => setDialogState(() => _currentPassword = value),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Nueva contraseña',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      prefixIcon: const Icon(Icons.lock_open, color: Color(0xFF06b6d4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                      ),
+                    ),
+                    onChanged: (value) => setDialogState(() => _newPassword = value),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Confirmar contraseña',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      prefixIcon: const Icon(Icons.check_circle, color: Color(0xFF06b6d4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                      ),
+                    ),
+                    onChanged: (value) => setDialogState(() => _confirmPassword = value),
+                  ),
+                  if (_passwordError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _passwordError!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: _changingPassword
+                      ? null
+                      : () {
+                          setState(() => _showChangePasswordDialog = false);
+                          Navigator.pop(context);
+                        },
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06b6d4),
+                  ),
+                  onPressed: _changingPassword ? null : () => _changePassword(context),
+                  child: _changingPassword
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Text('Cambiar', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).then((_) {
+      setState(() => _showChangePasswordDialog = false);
+    });
+  }
+
+  Future<void> _changePassword(BuildContext dialogContext) async {
+    setState(() => _passwordError = null);
+
+    // Validation
+    if (_currentPassword.isEmpty) {
+      setState(() => _passwordError = 'Ingresa tu contraseña actual');
+      return;
+    }
+    if (_newPassword.isEmpty) {
+      setState(() => _passwordError = 'Ingresa una nueva contraseña');
+      return;
+    }
+    if (_newPassword.length < 6) {
+      setState(() => _passwordError = 'La contraseña debe tener mínimo 6 caracteres');
+      return;
+    }
+    if (_newPassword != _confirmPassword) {
+      setState(() => _passwordError = 'Las contraseñas no coinciden');
+      return;
+    }
+
+    setState(() => _changingPassword = true);
+
+    try {
+      await _authService.changePassword(_currentPassword, _newPassword);
+      if (mounted) {
+        Navigator.pop(dialogContext);
+        _showSuccessSnackbar('Contraseña actualizada correctamente');
+        setState(() {
+          _showChangePasswordDialog = false;
+          _currentPassword = '';
+          _newPassword = '';
+          _confirmPassword = '';
+          _passwordError = null;
+          _changingPassword = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _passwordError = 'Error al cambiar contraseña: ${e.toString().replaceAll('Exception: ', '')}';
+        _changingPassword = false;
+      });
+    }
+  }
+
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF10b981),
+        duration: const Duration(seconds: 3),
       ),
     );
   }

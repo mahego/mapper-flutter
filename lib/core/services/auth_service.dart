@@ -128,6 +128,11 @@ class AuthService {
     await _repository.resetPassword(token, newPassword);
   }
 
+  // Change password (authenticated user)
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _repository.changePassword(currentPassword, newPassword);
+  }
+
   // Private: Save auth data
   Future<void> _saveAuthData(AuthResponse response) async {
     await _storage.saveToken(response.token);

@@ -159,4 +159,19 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception('Error al restablecer contraseña: $e');
     }
   }
+
+  @override
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    try {
+      await apiClient.post(
+        ApiEndpoints.changePassword,
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+    } catch (e) {
+      throw Exception('Error al cambiar contraseña: $e');
+    }
+  }
 }
