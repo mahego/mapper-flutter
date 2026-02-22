@@ -62,10 +62,12 @@ class _RequestsPageState extends State<RequestsPage> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ Error loading requests: $e');
+      print('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
-          _error = 'Error al cargar solicitudes. Verifica tu conexión.';
+          _error = 'Error al cargar solicitudes: $e';
           _isLoading = false;
         });
       }

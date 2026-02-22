@@ -254,8 +254,13 @@ class RequestRepository {
       queryParameters: queryParams,
     );
     final responseData = response.data;
+    print('📦 API Response: $responseData');
+    print('📦 Response type: ${responseData.runtimeType}');
+    
     if (responseData is! Map) return [];
     final data = responseData['data'] ?? responseData;
+    print('📦 Data extracted: $data');
+    
     List<dynamic> items = [];
     if (data is List) {
       items = data;
@@ -263,8 +268,19 @@ class RequestRepository {
       final raw = data['items'] ?? data['requests'];
       items = raw is List ? raw : [];
     }
+    print('📦 Items found: ${items.length}');
     if (items.isEmpty) return [];
-    return items.map((item) => ServiceRequest.fromJson(Map<String, dynamic>.from(item as Map))).toList();
+    
+    try {
+      return items.map((item) {
+        print('📦 Parsing item: $item');
+        return ServiceRequest.fromJson(Map<String, dynamic>.from(item as Map));
+      }).toList();
+    } catch (e, stackTrace) {
+      print('❌ Error parsing ServiceRequest: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Get a specific request by ID
@@ -324,21 +340,31 @@ class RequestRepository {
     int page = 1,
     int limit = 20,
   }) async {
+    print('🔍 getUnifiedRequests - type: $type, status: $status');
     final List<UnifiedRequestItem> result = [];
+    
     if (type != 'store') {
-      final requests = await getMyRequests(page: page, limit: limit, status: status == 'all' ? null : status);
-      for (final r in requests) {
-        result.add(UnifiedRequestItem(
-          id: r.id,
-          type: UnifiedRequestType.service,
-          status: r.status,
-          amount: r.estimatedCost ?? r.finalCost ?? 0,
-          createdAt: r.createdAt.toIso8601String(),
-          location: r.originAddress,
-          providerName: r.providerName,
-          serviceTypeName: r.serviceType,
-          serviceCategory: null,
-        ));
+      try {
+        print('🔍 Fetching service requests...');
+        final requests = await getMyRequests(page: page, limit: limit, status: status == 'all' ? null : status);
+        print('🔍 Service requests fetched: ${requests.length}');
+        for (final r in requests) {
+          result.add(UnifiedRequestItem(
+            id: r.id,
+            type: UnifiedRequestType.service,
+            status: r.status,
+            amount: r.estimatedCost ?? r.finalCost ?? 0,
+            createdAt: r.createdAt.toIso8601String(),
+            location: r.originAddress,
+            providerName: r.providerName,
+            serviceTypeName: r.serviceType,
+            serviceCategory: null,
+          ));
+        }
+      } catch (e, stackTrace) {
+        print('❌ Error fetching service requests: $e');
+        print('Stack trace: $stackTrace');
+        rethrow;
       }
     }
     if (type != 'service') {
@@ -369,6 +395,7 @@ class RequestRepository {
       } catch (_) {}
     }
     result.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
+    print('🔍 Total unified requests: ${result.length}');
     return result;
   }
 
