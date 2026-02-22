@@ -9,6 +9,13 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
 
 /// Catálogo de una tienda para el cliente con soporte de carrito.
+/// 
+/// NOTA: Imágenes de Firebase Storage
+/// - Las imágenes usan Image.network con errorBuilder para manejar fallos de carga
+/// - Si aparecen errores CORS en Flutter Web, es normal para Firebase Storage
+/// - Los errores se manejan automáticamente mostrando un icono de fallback
+/// - Para producción, configurar CORS en Firebase Storage:
+///   https://firebase.google.com/docs/storage/web/download-files#cors_configuration
 class ClientCatalogPage extends StatefulWidget {
   final String storeId;
 
@@ -452,29 +459,51 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                               // Image Section
                                               Stack(
                                                 children: [
-                                                  Container(
-                                                    height: 140,
-                                                    width: double.infinity,
-                                                    decoration: BoxDecoration(
+                                                  ClipRRect(
+                                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                                    child: Container(
+                                                      height: 140,
+                                                      width: double.infinity,
                                                       color: Colors.white.withOpacity(0.05),
-                                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                                      image: imageUrl != null
-                                                        ? DecorationImage(
-                                                            image: NetworkImage(imageUrl),
+                                                      child: imageUrl != null
+                                                        ? Image.network(
+                                                            imageUrl,
                                                             fit: BoxFit.cover,
-                                                            onError: (_, __) {},
+                                                            width: double.infinity,
+                                                            height: 140,
+                                                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                                              if (wasSynchronouslyLoaded) return child;
+                                                              return frame == null
+                                                                ? Center(
+                                                                    child: SizedBox(
+                                                                      width: 24,
+                                                                      height: 24,
+                                                                      child: CircularProgressIndicator(
+                                                                        strokeWidth: 2,
+                                                                        color: Colors.white.withOpacity(0.3),
+                                                                      ),
+                                                                    ),
+                                                                  )
+                                                                : child;
+                                                            },
+                                                            errorBuilder: (context, error, stackTrace) {
+                                                              return Center(
+                                                                child: Icon(
+                                                                  Icons.shopping_bag_outlined,
+                                                                  size: 48,
+                                                                  color: Colors.white.withOpacity(0.3),
+                                                                ),
+                                                              );
+                                                            },
                                                           )
-                                                        : null,
-                                                    ),
-                                                    child: imageUrl == null
-                                                      ? Center(
-                                                          child: Icon(
-                                                            Icons.shopping_bag_outlined,
-                                                            size: 48,
-                                                            color: Colors.white.withOpacity(0.3),
+                                                        : Center(
+                                                            child: Icon(
+                                                              Icons.shopping_bag_outlined,
+                                                              size: 48,
+                                                              color: Colors.white.withOpacity(0.3),
+                                                            ),
                                                           ),
-                                                        )
-                                                      : null,
+                                                    ),
                                                   ),
                                                   // Cart badge
                                                   if (inCart > 0)
@@ -904,28 +933,46 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                 // Image Section
                 Stack(
                   children: [
-                    Container(
-                      height: 250,
-                      decoration: BoxDecoration(
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      child: Container(
+                        height: 250,
+                        width: double.infinity,
                         color: Colors.white.withOpacity(0.05),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                        image: imageUrl != null
-                          ? DecorationImage(
-                              image: NetworkImage(imageUrl),
+                        child: imageUrl != null
+                          ? Image.network(
+                              imageUrl,
                               fit: BoxFit.cover,
-                              onError: (_, __) {},
+                              width: double.infinity,
+                              height: 250,
+                              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                                if (wasSynchronouslyLoaded) return child;
+                                return frame == null
+                                  ? Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white.withOpacity(0.3),
+                                      ),
+                                    )
+                                  : child;
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.shopping_bag_outlined,
+                                    size: 80,
+                                    color: Colors.white.withOpacity(0.3),
+                                  ),
+                                );
+                              },
                             )
-                          : null,
-                      ),
-                      child: imageUrl == null
-                        ? Center(
-                            child: Icon(
-                              Icons.shopping_bag_outlined,
-                              size: 80,
-                              color: Colors.white.withOpacity(0.3),
+                          : Center(
+                              child: Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 80,
+                                color: Colors.white.withOpacity(0.3),
+                              ),
                             ),
-                          )
-                        : null,
+                      ),
                     ),
                     Positioned(
                       top: 12,
