@@ -6,7 +6,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
-import '../../features/client/presentation/pages/client_dashboard_page.dart';
+import '../../features/client/presentation/pages/client_dashboard_container.dart';
 import '../../features/provider/presentation/pages/provider_dashboard_page.dart';
 import '../../features/provider/presentation/pages/bolsa_trabajo_page.dart';
 import '../../features/provider/presentation/pages/provider_requests_page.dart';
@@ -44,7 +44,7 @@ class AppRouter {
       GoRoute(
         path: '/dashboard/cliente',
         name: 'dashboard_cliente',
-        builder: (context, state) => const ClientDashboardPage(),
+        builder: (context, state) => const ClientDashboardContainer(),
       ),
       GoRoute(
         path: '/requests',
@@ -130,7 +130,7 @@ class AppRouter {
       GoRoute(
         path: '/client/dashboard',
         name: 'client_dashboard',
-        builder: (context, state) => const ClientDashboardPage(),
+        builder: (context, state) => const ClientDashboardContainer(),
       ),
       GoRoute(
         path: '/store/pos',
