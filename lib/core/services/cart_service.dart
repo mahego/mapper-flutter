@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Servicio para gestionar persistencia del carrito en localStorage
-/// Guarda carrito en JSON con timestamp para expiración
+/// Guarda carrito en JSON con timestamp para expiración de 24 horas
 class CartService {
-  // Claves de almacenamiento (comentadas para implementación web futura)
-  // static const String _cartKey = 'mapper_cart';
-  // static const String _cartRecoveryKey = 'mapper_cart_recovery';
-  // static const Duration _cartExpiration = Duration(hours: 24);
+  static const String _cartKey = 'mapper_cart';
+  static const String _cartRecoveryKey = 'mapper_cart_recovery';
+  static const Duration _cartExpiration = Duration(hours: 24);
 
   /// Guarda el carrito actual en storage
   /// 
@@ -30,10 +30,10 @@ class CartService {
       };
       final jsonString = jsonEncode(cartData);
       
-      // Implementación web (futura): 
-      // html.window.localStorage['mapper_cart'] = jsonString;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cartKey, jsonString);
       
-      debugPrint('[CartService] Guardado: ${jsonString.length} bytes');
+      debugPrint('[CartService] Guardado: ${jsonString.length} bytes, ${items.length} items');
     } catch (e) {
       debugPrint('[CartService] Error guardando carrito: $e');
     }
@@ -45,14 +45,41 @@ class CartService {
   /// Si encontró carrito expirado, lo guarda en recovery para poder recuperarlo
   Future<Map<String, dynamic>?> loadCart() async {
     try {
-      // Implementación web (futura):
-      // final jsonString = html.window.localStorage['mapper_cart'];
-      // if (jsonString == null) return null;
-      // final cartData = jsonDecode(jsonString);
-      // Validar fecha...
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_cartKey);
       
-      debugPrint('[CartService] Intentando cargar carrito...');
-      return null;
+      if (jsonString == null) {
+        debugPrint('[CartService] No hay carrito guardado');
+        return null;
+      }
+
+      final cartData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final timestampStr = cartData['timestamp'] as String?;
+      
+      if (timestampStr == null) {
+        debugPrint('[CartService] Carrito sin timestamp, descartando');
+        await clearCart();
+        return null;
+      }
+
+      final savedTime = DateTime.parse(timestampStr);
+      final now = DateTime.now();
+      final age = now.difference(savedTime);
+
+      // Verificar si expiró (> 24h)
+      if (age > _cartExpiration) {
+        debugPrint('[CartService] Carrito expirado (${age.inHours}h), moviendo a recovery');
+        
+        // Mover a recovery cart
+        await prefs.setString(_cartRecoveryKey, jsonString);
+        await clearCart();
+        
+        return null;
+      }
+
+      debugPrint('[CartService] Carrito cargado (${age.inMinutes} min de antigüedad)');
+      return cartData;
+      
     } catch (e) {
       debugPrint('[CartService] Error cargando carrito: $e');
       return null;
@@ -63,8 +90,18 @@ class CartService {
   /// Retorna null si no hay o ya fue recuperado/descartado
   Future<Map<String, dynamic>?> getRecoveryCart() async {
     try {
-      debugPrint('[CartService] Intentando cargar carrito de recovery...');
-      return null;
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_cartRecoveryKey);
+      
+      if (jsonString == null) {
+        debugPrint('[CartService] No hay carrito de recovery');
+        return null;
+      }
+
+      final cartData = jsonDecode(jsonString) as Map<String, dynamic>;
+      debugPrint('[CartService] Recovery cart encontrado');
+      return cartData;
+      
     } catch (e) {
       debugPrint('[CartService] Error cargando recovery cart: $e');
       return null;
@@ -74,7 +111,8 @@ class CartService {
   /// Limpia el carrito actual del storage
   Future<void> clearCart() async {
     try {
-      // Simulación: html.window.localStorage.remove(_cartKey);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_cartKey);
       debugPrint('[CartService] Carrito borrado');
     } catch (e) {
       debugPrint('[CartService] Error borrando carrito: $e');
@@ -84,7 +122,8 @@ class CartService {
   /// Limpia el carrito de recuperación
   Future<void> clearRecoveryCart() async {
     try {
-      // Simulación: html.window.localStorage.remove(_cartRecoveryKey);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_cartRecoveryKey);
       debugPrint('[CartService] Carrito de recovery borrado');
     } catch (e) {
       debugPrint('[CartService] Error borrando recovery cart: $e');

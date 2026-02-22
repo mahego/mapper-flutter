@@ -122,9 +122,116 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
             }
           });
         }
+      } else {
+        // No active cart, check for expired recovery cart
+        await _checkRecoveryCart();
       }
     } catch (e) {
       print('Error loading cart from storage: $e');
+    }
+  }
+
+  Future<void> _checkRecoveryCart() async {
+    try {
+      final recoveryCart = await _cartService.getRecoveryCart();
+      if (recoveryCart != null && mounted) {
+        // Only if same store
+        if (recoveryCart['storeId'] == widget.storeId) {
+          final items = recoveryCart['items'] as Map<String, dynamic>? ?? {};
+          final itemCount = items.length;
+          
+          // Show dialog asking if user wants to recover
+          _showRecoveryDialog(recoveryCart, itemCount);
+        }
+      }
+    } catch (e) {
+      print('Error checking recovery cart: $e');
+    }
+  }
+
+  void _showRecoveryDialog(Map<String, dynamic> recoveryCart, int itemCount) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0f172a).withOpacity(0.95),
+        title: const Text(
+          '🛒 Carrito Anterior',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Encontramos un carrito anterior con $itemCount productos.',
+              style: TextStyle(color: Colors.white.withOpacity(0.9)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '¿Deseas recuperarlo?',
+              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await _cartService.clearRecoveryCart();
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Descartar',
+              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10b981),
+            ),
+            onPressed: () async {
+              await _recoverCart(recoveryCart);
+              Navigator.pop(context);
+            },
+            child: const Text('Recuperar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _recoverCart(Map<String, dynamic> recoveryCart) async {
+    try {
+      setState(() {
+        final items = recoveryCart['items'] as Map<String, dynamic>?;
+        if (items != null) {
+          for (var entry in items.entries) {
+            _cart[entry.key] = {
+              'name': entry.value['name'],
+              'price': (entry.value['price'] as num).toDouble(),
+              'quantity': entry.value['quantity'] as int,
+            };
+          }
+          _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
+        }
+      });
+
+      // Save as new cart
+      await _saveCartToStorage();
+      
+      // Clear recovery
+      await _cartService.clearRecoveryCart();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Carrito recuperado exitosamente'),
+            backgroundColor: Color(0xFF10b981),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error recovering cart: $e');
     }
   }
 
