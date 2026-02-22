@@ -277,50 +277,6 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
             ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    // Ocultar en desktop (width >= 768)
-    if (MediaQuery.of(context).size.width >= 768) {
-      return const SizedBox.shrink();
-    }
-
-    return LiquidGlassBottomNav(
-      items: const [
-        BottomNavItem(
-          label: 'Inicio',
-          icon: Icons.home_outlined,
-          route: '/dashboard/cliente',
-        ),
-        BottomNavItem(
-          label: 'Solicitudes',
-          icon: Icons.assignment_outlined,
-          route: '/requests',
-        ),
-        BottomNavItem(
-          label: 'Tracking',
-          icon: Icons.location_on_outlined,
-          route: '/cliente/tracking',
-        ),
-        BottomNavItem(
-          label: 'Perfil',
-          icon: Icons.person_outline,
-          route: '/profile',
-        ),
-      ],
-      currentIndex: 0,
-      onTap: (index) {
-        final routes = [
-          '/dashboard/cliente',
-          '/requests',
-          '/cliente/tracking',
-          '/profile',
-        ];
-        context.go(routes[index]);
-      },
-      mobileOnly: true,
     );
   }
 

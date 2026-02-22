@@ -325,7 +325,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -1074,36 +1073,6 @@ class _ProfilePageState extends State<ProfilePage> {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    final width = MediaQuery.of(context).size.width;
-    if (width >= 768) return const SizedBox.shrink();
-
-    return LiquidGlassBottomNav(
-      items: const [
-        BottomNavItem(label: 'Inicio', icon: Icons.home_outlined, route: '/dashboard/cliente'),
-        BottomNavItem(label: 'Solicitudes', icon: Icons.assignment_outlined, route: '/solicitudes'),
-        BottomNavItem(label: 'Tracking', icon: Icons.location_on_outlined, route: '/tracking'),
-        BottomNavItem(label: 'Perfil', icon: Icons.person_outline, route: '/perfil'),
-      ],
-      currentIndex: 3,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/dashboard/cliente');
-            break;
-          case 1:
-            context.go('/solicitudes');
-            break;
-          case 2:
-            context.go('/tracking');
-            break;
-          case 3:
-            break;
-        }
-      },
     );
   }
 }

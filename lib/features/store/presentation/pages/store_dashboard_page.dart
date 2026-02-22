@@ -428,7 +428,6 @@ class _StoreDashboardPageState extends State<StoreDashboardPage> {
             ),
         ],
       ),
-      bottomNavigationBar: width < 768 ? _buildBottomNav() : null,
     );
   }
 
@@ -510,31 +509,6 @@ class _StoreDashboardPageState extends State<StoreDashboardPage> {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return LiquidGlassBottomNav(
-      items: const [
-        BottomNavItem(label: 'Inicio', icon: Icons.home_outlined, route: '/dashboard/tienda'),
-        BottomNavItem(label: 'Órdenes', icon: Icons.shopping_bag_outlined, route: '/ordenes'),
-        BottomNavItem(label: 'Reportes', icon: Icons.analytics_outlined, route: '/reportes'),
-        BottomNavItem(label: 'Perfil', icon: Icons.person_outline, route: '/perfil'),
-      ],
-      currentIndex: 0,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            break;
-          case 1:
-            break;
-          case 2:
-            break;
-          case 3:
-            context.go('/perfil');
-            break;
-        }
-      },
     );
   }
 }
