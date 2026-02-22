@@ -2,8 +2,41 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Servicio para gestionar persistencia del carrito en localStorage
-/// Guarda carrito en JSON con timestamp para expiración de 24 horas
+/// Servicio de persistencia del carrito de compras
+/// 
+/// Características:
+/// - Persistencia automática en SharedPreferences (web + mobile)
+/// - Expiración de 24 horas con sistema de recuperación
+/// - Validación de tienda (evita conflictos entre stores)
+/// - Soporte para carritos expirados (recovery cart)
+/// 
+/// Flujo típico:
+/// 1. Usuario agrega items → saveCart()
+/// 2. Cierra app → datos persistidos
+/// 3. Abre app < 24h → loadCart() retorna items
+/// 4. Abre app > 24h → carrito movido a recovery
+/// 5. Usuario decide: recuperar o descartar
+/// 
+/// Ejemplo de uso:
+/// ```dart
+/// final cartService = CartService();
+/// 
+/// // Guardar
+/// await cartService.saveCart(
+///   items: _cart,
+///   storeId: '123',
+///   total: 45.99,
+/// );
+/// 
+/// // Cargar
+/// final cart = await cartService.loadCart();
+/// if (cart != null) {
+///   // Carrito válido (< 24h)
+/// } else {
+///   // Verificar recovery
+///   final recovery = await cartService.getRecoveryCart();
+/// }
+/// ```
 class CartService {
   static const String _cartKey = 'mapper_cart';
   static const String _cartRecoveryKey = 'mapper_cart_recovery';
@@ -136,6 +169,40 @@ class CartService {
     return cart != null;
   }
 
+  /// Verifica si existe un carrito de recuperación (expirado)
+  Future<bool> hasRecoveryCart() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_cartRecoveryKey);
+      return jsonString != null;
+    } catch (e) {
+      debugPrint('[CartService] Error verificando recovery cart: $e');
+      return false;
+    }
+  }
+
+  /// Obtiene la antigüedad del carrito actual (si existe)
+  /// Retorna Duration o null si no hay carrito
+  Future<Duration?> getCartAge() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_cartKey);
+      
+      if (jsonString == null) return null;
+
+      final cartData = jsonDecode(jsonString) as Map<String, dynamic>;
+      final timestampStr = cartData['timestamp'] as String?;
+      
+      if (timestampStr == null) return null;
+
+      final savedTime = DateTime.parse(timestampStr);
+      return DateTime.now().difference(savedTime);
+    } catch (e) {
+      debugPrint('[CartService] Error obteniendo antigüedad del carrito: $e');
+      return null;
+    }
+  }
+
   /// Obtiene resumen del carrito guardado (sin cargar items completos)
   /// Útil para mostrar en badge del header
   Future<CartSummary?> getCartSummary() async {
@@ -157,6 +224,14 @@ class CartService {
       return null;
     }
   }
+
+  /// Limpia todos los datos del carrito (activo + recovery)
+  /// Útil para debugging o logout
+  Future<void> clearAll() async {
+    await clearCart();
+    await clearRecoveryCart();
+    debugPrint('[CartService] Todos los datos del carrito borrados');
+  }
 }
 
 /// Datos resumidos del carrito para mostrar en UI
@@ -170,6 +245,9 @@ class CartSummary {
     required this.total,
     required this.storeId,
   });
+
+  @override
+  String toString() => 'CartSummary(items: $itemCount, total: \$$total, store: $storeId)';
 }
 
 /// Extensión para cálculo rápido de cantidad total de items
