@@ -1,3 +1,15 @@
+// Helper function to safely convert to double
+double? _toDoubleOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) {
+    final parsed = double.tryParse(value);
+    return parsed;
+  }
+  return null;
+}
+
 class ServiceRequest {
   final String id;
   final String clientId;
@@ -51,12 +63,12 @@ class ServiceRequest {
       status: json['status'] ?? 'pending',
       originAddress: json['originAddress'] ?? json['origin_address'] ?? json['pickup_location'] ?? '',
       destinationAddress: json['destAddress'] ?? json['destinationAddress'] ?? json['destination_address'] ?? json['delivery_location'] ?? '',
-      originLat: json['originLat']?.toDouble() ?? json['origin_lat']?.toDouble() ?? json['pickup_latitude']?.toDouble(),
-      originLng: json['originLng']?.toDouble() ?? json['origin_lng']?.toDouble() ?? json['pickup_longitude']?.toDouble(),
-      destinationLat: json['destLat']?.toDouble() ?? json['destinationLat']?.toDouble() ?? json['destination_lat']?.toDouble() ?? json['delivery_latitude']?.toDouble(),
-      destinationLng: json['destLng']?.toDouble() ?? json['destinationLng']?.toDouble() ?? json['destination_lng']?.toDouble() ?? json['delivery_longitude']?.toDouble(),
-      estimatedCost: json['estimatedCost']?.toDouble() ?? json['estimated_cost']?.toDouble(),
-      finalCost: json['finalPrice']?.toDouble() ?? json['finalCost']?.toDouble() ?? json['final_cost']?.toDouble() ?? json['final_price']?.toDouble(),
+      originLat: _toDoubleOrNull(json['originLat'] ?? json['origin_lat'] ?? json['pickup_latitude']),
+      originLng: _toDoubleOrNull(json['originLng'] ?? json['origin_lng'] ?? json['pickup_longitude']),
+      destinationLat: _toDoubleOrNull(json['destLat'] ?? json['destinationLat'] ?? json['destination_lat'] ?? json['delivery_latitude']),
+      destinationLng: _toDoubleOrNull(json['destLng'] ?? json['destinationLng'] ?? json['destination_lng'] ?? json['delivery_longitude']),
+      estimatedCost: _toDoubleOrNull(json['estimatedCost'] ?? json['estimated_cost']),
+      finalCost: _toDoubleOrNull(json['finalPrice'] ?? json['finalCost'] ?? json['final_cost'] ?? json['final_price']),
       pickupTime: json['pickupTime'] ?? json['pickup_time'] ?? json['startedAt'] ?? json['started_at'],
       deliveryTime: json['deliveryTime'] ?? json['delivery_time'] ?? json['completedAt'] ?? json['completed_at'],
       notes: json['notes'] ?? json['description'],
