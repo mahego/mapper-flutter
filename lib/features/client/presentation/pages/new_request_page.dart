@@ -7,6 +7,8 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_card.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../core/validators/input_validators.dart';
+import '../../../../core/utils/error_handler.dart';
 import '../../domain/repositories/request_repository.dart';
 
 /// Nueva solicitud en 4 pasos (paridad Angular CreateRequestComponent):
@@ -45,6 +47,11 @@ class _NewRequestPageState extends State<NewRequestPage> {
   bool _loadingOrigin = false;
   bool _loadingDest = false;
   bool _isSubmitting = false;
+
+  // Field validation errors
+  String? _originError;
+  String? _destinationError;
+  String? _notesError;
 
   double _proposedPrice = 0;
   double? _estimatedDistance;
@@ -191,16 +198,23 @@ class _NewRequestPageState extends State<NewRequestPage> {
 
   Future<void> _geocodeDestination() async {
     final query = _destinationController.text.trim();
-    if (query.isEmpty) {
-      setState(() => _error = 'Escribe la dirección de destino');
+    
+    // Validate destination address
+    final destinationError = InputValidators.validateAddress(query);
+    setState(() => _destinationError = destinationError);
+    
+    if (destinationError != null) {
+      setState(() => _error = destinationError);
       return;
     }
+    
     setState(() => _loadingDest = true);
     try {
       final locations = await locationFromAddress(query);
       if (locations.isEmpty || !mounted) {
         setState(() {
           _loadingDest = false;
+          _destinationError = 'No se encontró la dirección. Prueba con "Mi ubicación" o otra redacción.';
           _error = 'No se encontró la dirección. Prueba con "Mi ubicación" o otra redacción.';
         });
         return;
@@ -212,6 +226,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
         _destDisplay = query;
         _loadingDest = false;
         _error = '';
+        _destinationError = null;
       });
     } catch (e) {
       if (mounted) {
@@ -305,6 +320,31 @@ class _NewRequestPageState extends State<NewRequestPage> {
   }
 
   Future<void> _submitRequest() async {
+    // Validate all fields before submission
+    final originError = _requiresOrigin ? InputValidators.validateAddress(_originController.text) : null;
+    final destinationError = InputValidators.validateAddress(_destinationController.text);
+    final notesError = InputValidators.validateNotes(_notesController.text);
+
+    setState(() {
+      _originError = originError;
+      _destinationError = destinationError;
+      _notesError = notesError;
+    });
+
+    // Check validations
+    if (originError != null) {
+      setState(() => _error = originError);
+      return;
+    }
+    if (destinationError != null) {
+      setState(() => _error = destinationError);
+      return;
+    }
+    if (notesError != null) {
+      setState(() => _error = notesError);
+      return;
+    }
+
     if (_selectedCategory == null || _selectedService == null || _destLat == null || _destLng == null) {
       setState(() => _error = 'Faltan datos para crear la solicitud.');
       return;
@@ -338,9 +378,10 @@ class _NewRequestPageState extends State<NewRequestPage> {
         context.go('/requests');
       }
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e);
       if (mounted) {
         setState(() {
-          _error = e.toString().contains('Exception') ? 'Error al crear la solicitud. Intenta de nuevo.' : e.toString();
+          _error = errorMessage;
           _isSubmitting = false;
         });
       }
@@ -647,9 +688,39 @@ class _NewRequestPageState extends State<NewRequestPage> {
                       ),
                 filled: true,
                 fillColor: Colors.white.withOpacity(0.1),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _originError != null
+                        ? Colors.red.withOpacity(0.5)
+                        : Colors.white.withOpacity(0.2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _originError != null
+                        ? Colors.red.withOpacity(0.5)
+                        : Colors.white.withOpacity(0.2),
+                  ),
+                ),
               ),
+              onChanged: (value) {
+                setState(() {
+                  _originError = InputValidators.validateAddress(value);
+                });
+              },
             ),
+            if (_originError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _originError!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             const SizedBox(height: 20),
           ],
           Text('Dirección de destino', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
@@ -683,9 +754,39 @@ class _NewRequestPageState extends State<NewRequestPage> {
                     ),
               filled: true,
               fillColor: Colors.white.withOpacity(0.1),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _destinationError != null
+                      ? Colors.red.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _destinationError != null
+                      ? Colors.red.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.2),
+                ),
+              ),
             ),
+            onChanged: (value) {
+              setState(() {
+                _destinationError = InputValidators.validateAddress(value);
+              });
+            },
           ),
+          if (_destinationError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _destinationError!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           const SizedBox(height: 20),
           Text('Notas (opcional)', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
           const SizedBox(height: 8),
@@ -698,9 +799,39 @@ class _NewRequestPageState extends State<NewRequestPage> {
               hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
               filled: true,
               fillColor: Colors.white.withOpacity(0.1),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _notesError != null
+                      ? Colors.red.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _notesError != null
+                      ? Colors.red.withOpacity(0.5)
+                      : Colors.white.withOpacity(0.2),
+                ),
+              ),
             ),
+            onChanged: (value) {
+              setState(() {
+                _notesError = InputValidators.validateNotes(value);
+              });
+            },
           ),
+          if (_notesError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _notesError!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -782,7 +913,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: GradientButton(
-                  onPressed: _isSubmitting ? null : _submitRequest,
+                  onPressed: _isSubmitting ? null : _validateAndSubmit,
                   text: _isSubmitting ? 'Creando...' : 'Crear Solicitud',
                   isLoading: _isSubmitting,
                 ),
@@ -792,5 +923,9 @@ class _NewRequestPageState extends State<NewRequestPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _validateAndSubmit() async {
+    await _submitRequest();
   }
 }
