@@ -1,27 +1,268 @@
-# Firebase config files (MUST NOT be committed)
+# =============================================================================
+# SENSITIVE/SECRET FILES (NEVER COMMIT)
+# =============================================================================
+# Firebase Configuration (MUST be local only)
 google-services.json
 GoogleService-Info.plist
 serviceAccountKey.json
+serviceAccountKey.example.json
 
-# Dependencies
-/node_modules
-/.pub-cache
-/packages
-.packages
-.flutter-plugins
-.flutter-plugins-dependencies
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production.local
 
-# Build
-/build
-/ios/Flutter/Flutter.podspec
-/ios/Flutter/Flutter.framework
-/ios/Flutter/Flutter.xcframework
-/ios/Flutter/Generated.xcconfig
-/ios/Flutter/ephemeral/
-/ios/Flutter/app.flutterapp
+# API Keys and credentials
+*.key
+*.pem
+*.p12
+*.p8
+*.mobileprovision
+*.provisioning
+
+# Private keys
+id_rsa
+id_rsa.pub
+id_dsa
+id_ecdsa
+
+# =============================================================================
+# FLUTTER & DART
+# =============================================================================
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.xcframework
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flutterapp
+**/ios/Flutter/app.iar
+**/ios/Flutter/app.zip
+**/ios/FlutterFlow/
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/app/outputs
+/android/.gradle
+/android/gradle.properties
+/android/local.properties
+
+# iOS/macOS
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*sync/
+**/ios/**/.sconsign.dblite
+**/ios/**/.tags*
+**/ios/**/.vagrant/
+**/ios/**/DerivedData/
+**/ios/**/Icon?
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/Flutter/Flutter.framework
+**/ios/**/Flutter/Flutter.xcframework
+**/ios/**/Flutter/Flutter.podspec
+**/ios/**/Flutter/Flutter*.framework
+**/ios/**/Flutter/Flutter*.podspec
+**/ios/**/GeneratedPluginRegistrant.*
+**/ios/**/google_maps_flutter_ios
+**/ios/Runner/GeneratedPluginRegistrant.h
+**/ios/Runner/GeneratedPluginRegistrant.m
+**/macos/Flutter/Flutter-Release.podspec
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
 
 # Coverage
-/coverage
+coverage/
+.coverage
+html/
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# =============================================================================
+# BUILD & DEPENDENCY FILES
+# =============================================================================
+# Packages
+.packages
+.package_config.json
+pubspec.lock
+
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# =============================================================================
+# BUILD OUTPUTS
+# =============================================================================
+# Flutter web
+/web/generated_plugin_registrant.dart
+/web/plugins/
+
+# Build
+/build
+/ios/Pods
+/ios/.symlinks/
+/ios/.generated/
+/ios/Flutter/Flutter.framework
+/android/local.properties
+/android/.gradle/
+/android/gradlew.bat
+
+# =============================================================================
+# RUNTIME & TEMPORARY FILES
+# =============================================================================
+# Logs
+logs/
+*.log
+npm-debug.log
+npm-error.log
+pnpm-error.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# OS Generated files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# =============================================================================
+# IDE & EDITOR SPECIFIC
+# =============================================================================
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+*.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.c9/
+*.jedi
+
+# =============================================================================
+# DATABASE & LOCAL STORAGE
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+.realm/*
+*.dump
+
+# =============================================================================
+# CUSTOM PROJECT SPECIFIC
+# =============================================================================
+# Training data (can be large)
+training-data/
+session-*/
+
+# Test reports
+test-results/
+junit.xml
+
+# Generated files
+generated/
+.dart_tool/
+.metadata
+
+# VSCode extensions
+.vscode/extensions
+.vscode/settings.json
+.vscode/launch.json
+
+# =============================================================================
+# KEEP THESE - IMPORTANT FOR PROJECT
+# =============================================================================
+# DO NOT IGNORE:
+!.gitignore
+!.gitattributes
+!.github/
+!.env.example
+!google-services.json.example
+!GoogleService-Info.plist.example
