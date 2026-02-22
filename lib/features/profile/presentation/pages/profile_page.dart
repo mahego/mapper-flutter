@@ -834,7 +834,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                     ],
                   ),
-                  if (_passwordError != null) ..[
+                  if (_passwordError != null) ...[
                     const SizedBox(height: 12),
                     Text(
                       _passwordError!,

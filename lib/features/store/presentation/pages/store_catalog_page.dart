@@ -303,7 +303,6 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const StoreBottomNav(currentIndex: 1),
     );
   }
 }

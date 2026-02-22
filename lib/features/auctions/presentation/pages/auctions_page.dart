@@ -8,7 +8,6 @@ class AuctionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TropicalScaffold(
-      bottomNavigationBar: const ProviderBottomNav(currentIndex: 3),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(

@@ -363,7 +363,6 @@ class _StorePosPageState extends State<StorePosPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const StoreBottomNav(currentIndex: 0),
     );
   }
 }

@@ -279,7 +279,6 @@ class _StoreMorePageState extends State<StoreMorePage> {
                 ),
               ),
             ),
-      bottomNavigationBar: const StoreBottomNav(currentIndex: 3),
     );
   }
 

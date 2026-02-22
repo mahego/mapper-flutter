@@ -190,7 +190,6 @@ class _ClientTrackingPageState extends State<ClientTrackingPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const ClientBottomNav(currentIndex: 2),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(

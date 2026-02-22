@@ -241,7 +241,6 @@ class _StoreOrdersPageState extends State<StoreOrdersPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const StoreBottomNav(currentIndex: 2),
     );
   }
 

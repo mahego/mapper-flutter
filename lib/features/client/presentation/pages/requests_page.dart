@@ -106,7 +106,6 @@ class _RequestsPageState extends State<RequestsPage> {
           ),
         ],
       ),
-      bottomNavigationBar: const ClientBottomNav(currentIndex: 1),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/requests/new'),
         backgroundColor: const Color(0xFFf97316),
