@@ -70,7 +70,8 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _unreadNotificationsCount = count);
       }
     } catch (e) {
-      print('Error loading notification count: $e');
+      // Silently fail for notification count, not critical
+      debugPrint('Error loading notification count: ${ErrorHandler.getErrorMessage(e)}');
     }
   }
 
@@ -92,8 +93,9 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = ErrorHandler.getErrorMessage(e);
         setState(() {
-          _error = 'Error al cargar el perfil.';
+          _error = errorMessage;
           _loading = false;
         });
       }
@@ -128,7 +130,8 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         await _notificationService.markAllAsRead();
       } catch (e) {
-        print('Error marking notifications as read: $e');
+        // Silently fail for marking as read, not critical
+        debugPrint('Error marking notifications as read: ${ErrorHandler.getErrorMessage(e)}');
       }
     }
   }
