@@ -17,6 +17,10 @@ import '../../features/vehicles/presentation/pages/vehicles_page.dart';
 import '../../features/client/presentation/pages/requests_page.dart';
 import '../../features/client/presentation/pages/client_tracking_page.dart';
 import '../../features/client/presentation/pages/new_request_page.dart';
+import '../../features/client/presentation/pages/request_detail_page.dart';
+import '../../features/client/presentation/pages/request_tracking_page.dart';
+import '../../features/client/presentation/pages/client_catalog_page.dart';
+import '../../features/client/presentation/pages/store_order_detail_page.dart';
 import '../../features/store/presentation/pages/store_pos_page.dart';
 import '../../features/store/presentation/pages/store_catalog_page.dart';
 import '../../features/store/presentation/pages/store_orders_page.dart';
@@ -24,9 +28,79 @@ import '../../features/store/presentation/pages/store_more_page.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/auth/login',
+    initialLocation: '/login',
     routes: [
-      // Auth Routes
+      // === Rutas estilo Angular (paridad cliente) ===
+      GoRoute(
+        path: '/login',
+        name: 'login_angular',
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register_angular',
+        builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/dashboard/cliente',
+        name: 'dashboard_cliente',
+        builder: (context, state) => const ClientDashboardPage(),
+      ),
+      GoRoute(
+        path: '/requests',
+        name: 'requests_list',
+        builder: (context, state) => const RequestsPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: 'requests_new',
+            builder: (context, state) => const NewRequestPage(),
+          ),
+          GoRoute(
+            path: ':id',
+            name: 'request_detail',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return RequestDetailPage(requestId: id);
+            },
+          ),
+          GoRoute(
+            path: ':id/tracking',
+            name: 'request_tracking',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return RequestTrackingPage(requestId: id);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/cliente/tracking',
+        name: 'cliente_tracking',
+        builder: (context, state) => const ClientTrackingPage(),
+      ),
+      GoRoute(
+        path: '/cliente/catalog/:storeId',
+        name: 'cliente_catalog',
+        builder: (context, state) {
+          final storeId = state.pathParameters['storeId'] ?? '';
+          return ClientCatalogPage(storeId: storeId);
+        },
+      ),
+      GoRoute(
+        path: '/cliente/store-order/:id',
+        name: 'store_order_detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return StoreOrderDetailPage(orderId: id);
+        },
+      ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile_angular',
+        builder: (context, state) => const ProfilePage(),
+      ),
+      // === Auth (legacy) ===
       GoRoute(
         path: '/auth/login',
         name: 'login',
@@ -42,8 +116,7 @@ class AppRouter {
         name: 'forgot_password',
         builder: (context, state) => const ForgotPasswordPage(),
       ),
-      
-      // Main Routes
+      // Main
       GoRoute(
         path: '/',
         name: 'home',
@@ -53,11 +126,6 @@ class AppRouter {
         path: '/orders',
         name: 'orders',
         builder: (context, state) => const OrdersPage(),
-      ),
-      GoRoute(
-        path: '/profile',
-        name: 'profile',
-        builder: (context, state) => const ProfilePage(),
       ),
       GoRoute(
         path: '/client/dashboard',
@@ -118,21 +186,6 @@ class AppRouter {
         path: '/vehicles',
         name: 'vehicles',
         builder: (context, state) => const VehiclesPage(),
-      ),
-      GoRoute(
-        path: '/requests',
-        name: 'requests',
-        builder: (context, state) => const RequestsPage(),
-      ),
-      GoRoute(
-        path: '/requests/new',
-        name: 'new_request',
-        builder: (context, state) => const NewRequestPage(),
-      ),
-      GoRoute(
-        path: '/cliente/tracking',
-        name: 'client_tracking',
-        builder: (context, state) => const ClientTrackingPage(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

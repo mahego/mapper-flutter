@@ -31,11 +31,11 @@ class LiquidGlassCard extends StatelessWidget {
           height: height,
           padding: padding ?? const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
+            color: Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: Colors.white.withOpacity(0.25),
-              width: 1.5,
+              color: Colors.white.withOpacity(0.16),
+              width: 1,
             ),
           ),
           child: child,

@@ -1,9 +1,16 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/widgets/tropical_scaffold.dart';
-import '../../../../core/services/geolocation_service.dart';
-import '../../../../core/entities/location_coordinates.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/widgets/liquid_glass_background.dart';
+import '../../../../core/widgets/liquid_glass_card.dart';
+import '../../../../core/widgets/gradient_button.dart';
+import '../../domain/repositories/request_repository.dart';
 
+/// Nueva solicitud en 4 pasos (paridad Angular CreateRequestComponent):
+/// 1) Categoría → 2) Tipo de servicio → 3) Ubicación → 4) Confirmar
 class NewRequestPage extends StatefulWidget {
   const NewRequestPage({super.key});
 
@@ -12,374 +19,358 @@ class NewRequestPage extends StatefulWidget {
 }
 
 class _NewRequestPageState extends State<NewRequestPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _serviceTypeController = TextEditingController();
+  static const _stepLabels = ['Categoría', 'Servicio', 'Ubicación', 'Confirmar'];
+
+  final _requestRepository = RequestRepository(ApiClient());
   final _originController = TextEditingController();
   final _destinationController = TextEditingController();
   final _notesController = TextEditingController();
-  final _geolocationService = GeolocationService();
-  
-  String _selectedServiceType = 'mudanza';
-  LocationCoordinates? _originCoordinates;
-  LocationCoordinates? _destinationCoordinates;
-  bool _isLoadingLocation = false;
+
+  int _currentStep = 1;
+  List<ServiceCategoryModel> _categories = [];
+  bool _categoriesLoading = true;
+  String _error = '';
+  String _successMessage = '';
+
+  ServiceCategoryModel? _selectedCategory;
+  ServiceTypeModel? _selectedService;
+
+  double? _originLat;
+  double? _originLng;
+  String _originDisplay = '';
+  double? _destLat;
+  double? _destLng;
+  String _destDisplay = '';
+
+  bool _loadingOrigin = false;
+  bool _loadingDest = false;
+  bool _isSubmitting = false;
+
+  double _proposedPrice = 0;
+  double? _estimatedDistance;
+
+  List<SavedAddressModel> _savedAddresses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+    _loadSavedAddresses();
+  }
+
+  Future<void> _loadSavedAddresses() async {
+    try {
+      final list = await _requestRepository.getSavedAddresses();
+      if (mounted) setState(() => _savedAddresses = list);
+    } catch (_) {}
+  }
+
+  void _applySavedAddress(SavedAddressModel addr, bool isOrigin) {
+    if (isOrigin) {
+      setState(() {
+        _originLat = addr.latitude;
+        _originLng = addr.longitude;
+        _originDisplay = addr.address;
+        _originController.text = addr.address;
+      });
+    } else {
+      setState(() {
+        _destLat = addr.latitude;
+        _destLng = addr.longitude;
+        _destDisplay = addr.address;
+        _destinationController.text = addr.address;
+      });
+    }
+  }
 
   @override
   void dispose() {
-    _serviceTypeController.dispose();
     _originController.dispose();
     _destinationController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
-  void _submitRequest() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Implement request submission
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Solicitud creada exitosamente'),
-          backgroundColor: Color(0xFF10b981),
-        ),
-      );
-      context.pop();
-    }
-  }
+  bool get _requiresOrigin => _selectedService?.requiresOrigin ?? _selectedCategory?.requiresOrigin ?? true;
 
-  Future<void> _getCurrentLocation() async {
+  Future<void> _loadCategories() async {
     setState(() {
-      _isLoadingLocation = true;
+      _categoriesLoading = true;
+      _error = '';
     });
-
     try {
-      final position = await _geolocationService.getCurrentPosition();
-      
-      if (position != null) {
+      final list = await _requestRepository.getServiceCategories();
+      if (mounted) {
         setState(() {
-          _originCoordinates = LocationCoordinates(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            altitude: position.altitude,
-            accuracy: position.accuracy,
-            timestamp: position.timestamp,
-          );
-          
-          // Update text field with coordinates
-          _originController.text = 'Ubicación actual: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+          _categories = list;
+          _categoriesLoading = false;
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ubicación obtenida exitosamente'),
-              backgroundColor: Color(0xFF10b981),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('No se pudo obtener la ubicación. Verifica los permisos.'),
-              backgroundColor: Colors.orange,
-              action: SnackBarAction(
-                label: 'Configurar',
-                textColor: Colors.white,
-                onPressed: () {
-                  _geolocationService.openAppSettings();
-                },
-              ),
-            ),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al obtener ubicación: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _error = 'No se pudieron cargar las categorías de servicio.';
+          _categoriesLoading = false;
+        });
       }
-    } finally {
+    }
+  }
+
+  void _selectCategory(ServiceCategoryModel cat) {
+    setState(() {
+      _selectedCategory = cat;
+      _selectedService = cat.services.isNotEmpty ? cat.services.first : null;
+      _error = '';
+      if (cat.services.length == 1) {
+        _currentStep = 2;
+      } else {
+        _currentStep = 2;
+      }
+    });
+  }
+
+  void _selectService(ServiceTypeModel svc) {
+    setState(() {
+      _selectedService = svc;
+      _error = '';
+      _currentStep = 3;
+    });
+  }
+
+  Future<void> _useMyLocation(bool isOrigin) async {
+    if (isOrigin) {
+      setState(() => _loadingOrigin = true);
+    } else {
+      setState(() => _loadingDest = true);
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
+      List<Placemark>? placemarks;
+      try {
+        placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      } catch (_) {}
+      final address = placemarks?.isNotEmpty == true
+          ? '${placemarks!.first.street ?? ''}, ${placemarks.first.locality ?? ''}'.trim()
+          : 'Mi ubicación actual';
+      if (address.isEmpty) {
+        if (isOrigin) _originDisplay = 'Mi ubicación actual';
+        else _destDisplay = 'Mi ubicación actual';
+      } else {
+        if (isOrigin) _originDisplay = address;
+        else _destDisplay = address;
+      }
+      if (mounted) {
+        setState(() {
+          if (isOrigin) {
+            _originLat = pos.latitude;
+            _originLng = pos.longitude;
+            _originController.text = _originDisplay.isEmpty ? 'Mi ubicación actual' : _originDisplay;
+            _loadingOrigin = false;
+          } else {
+            _destLat = pos.latitude;
+            _destLng = pos.longitude;
+            _destinationController.text = _destDisplay.isEmpty ? 'Mi ubicación actual' : _destDisplay;
+            _loadingDest = false;
+          }
+          _error = '';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingOrigin = false;
+          _loadingDest = false;
+          _error = 'No se pudo obtener tu ubicación. Verifica los permisos.';
+        });
+      }
+    }
+  }
+
+  Future<void> _geocodeDestination() async {
+    final query = _destinationController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _error = 'Escribe la dirección de destino');
+      return;
+    }
+    setState(() => _loadingDest = true);
+    try {
+      final locations = await locationFromAddress(query);
+      if (locations.isEmpty || !mounted) {
+        setState(() {
+          _loadingDest = false;
+          _error = 'No se encontró la dirección. Prueba con "Mi ubicación" o otra redacción.';
+        });
+        return;
+      }
+      final loc = locations.first;
       setState(() {
-        _isLoadingLocation = false;
+        _destLat = loc.latitude;
+        _destLng = loc.longitude;
+        _destDisplay = query;
+        _loadingDest = false;
+        _error = '';
       });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadingDest = false;
+          _error = 'No se pudo buscar la dirección.';
+        });
+      }
+    }
+  }
+
+  void _estimatePrice() {
+    double distance = 0;
+    if (_requiresOrigin && _originLat != null && _originLng != null && _destLat != null && _destLng != null) {
+      distance = _haversine(_originLat!, _originLng!, _destLat!, _destLng!);
+    }
+    _estimatedDistance = distance;
+    final config = _selectedService ?? _selectedCategory;
+    final base = config?.basePrice ?? 150;
+    final perKm = config?.pricePerKm ?? 12;
+    _proposedPrice = base + (distance * perKm);
+  }
+
+  double _haversine(double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371.0;
+    final dLat = _toRad(lat2 - lat1);
+    final dLon = _toRad(lon2 - lon1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRad(lat1)) * math.cos(_toRad(lat2)) * math.sin(dLon / 2) * math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return R * c;
+  }
+
+  double _toRad(double deg) => deg * math.pi / 180;
+
+  void _nextStep() {
+    setState(() => _error = '');
+    if (_currentStep == 1) {
+      if (_selectedCategory == null) {
+        _error = 'Elige una categoría para continuar';
+        return;
+      }
+      if (_selectedCategory!.services.isEmpty) {
+        _error = 'Esta categoría no tiene servicios.';
+        return;
+      }
+      if (_selectedCategory!.services.length == 1) {
+        _selectService(_selectedCategory!.services.first);
+      } else {
+        _currentStep = 2;
+      }
+      return;
+    }
+    if (_currentStep == 2) {
+      if (_selectedService == null) {
+        _error = 'Elige un tipo de servicio para continuar';
+        return;
+      }
+      _currentStep = 3;
+      return;
+    }
+    if (_currentStep == 3) {
+      if (_requiresOrigin && (_originLat == null || _originLng == null)) {
+        _error = 'Completa origen (usa "Mi ubicación" o escribe y busca).';
+        return;
+      }
+      if (_destLat == null || _destLng == null) {
+        if (_destinationController.text.trim().isEmpty) {
+          _error = 'Indica la dirección de destino.';
+          return;
+        }
+        _geocodeDestination();
+        return;
+      }
+      _estimatePrice();
+      _currentStep = 4;
+    }
+  }
+
+  void _prevStep() {
+    setState(() {
+      _error = '';
+      if (_currentStep > 1) _currentStep--;
+    });
+  }
+
+  Future<void> _submitRequest() async {
+    if (_selectedCategory == null || _selectedService == null || _destLat == null || _destLng == null) {
+      setState(() => _error = 'Faltan datos para crear la solicitud.');
+      return;
+    }
+    setState(() {
+      _isSubmitting = true;
+      _error = '';
+    });
+    try {
+      await _requestRepository.createExpressRequest(
+        categoryId: _selectedCategory!.id,
+        serviceTypeId: _selectedService!.id,
+        serviceTypeName: _selectedService!.name,
+        deliveryLocation: _destDisplay.isNotEmpty ? _destDisplay : _destinationController.text.trim(),
+        deliveryLatitude: _destLat!,
+        deliveryLongitude: _destLng!,
+        offeredPrice: _proposedPrice,
+        pickupLocation: _requiresOrigin && _originDisplay.isNotEmpty ? _originDisplay : _originController.text.trim().isNotEmpty ? _originController.text.trim() : null,
+        pickupLatitude: _originLat,
+        pickupLongitude: _originLng,
+        description: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+      );
+      if (mounted) {
+        setState(() {
+          _successMessage = '¡Solicitud creada exitosamente!';
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Solicitud creada exitosamente!'), backgroundColor: Color(0xFF10b981)),
+        );
+        context.go('/requests');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().contains('Exception') ? 'Error al crear la solicitud. Intenta de nuevo.' : e.toString();
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return TropicalScaffold(
-      appBar: AppBar(
-        title: const Text('Nueva Solicitud'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
+    return Scaffold(
+      body: LiquidGlassBackground(
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              const Text(
-                'Crear nueva solicitud',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => _currentStep > 1 ? _prevStep() : context.go('/requests'),
                 ),
+                title: const Text('Nueva Solicitud', style: TextStyle(color: Colors.white, fontSize: 18)),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Completa los datos para tu solicitud de servicio',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withOpacity(0.7),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Service Type Selection
-              const Text(
-                'Tipo de servicio',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-                child: DropdownButtonFormField<String>(
-                  value: _selectedServiceType,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    prefixIcon: Icon(
-                      Icons.local_shipping,
-                      color: Colors.white.withOpacity(0.6),
-                    ),
-                  ),
-                  dropdownColor: const Color(0xFF0f172a),
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  items: const [
-                    DropdownMenuItem(value: 'mudanza', child: Text('Mudanza')),
-                    DropdownMenuItem(value: 'transporte', child: Text('Transporte')),
-                    DropdownMenuItem(value: 'mensajeria', child: Text('Mensajería')),
-                    DropdownMenuItem(value: 'carga', child: Text('Carga pesada')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedServiceType = value!;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Origin Address
-              const Text(
-                'Dirección de origen',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _originController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Ingresa la dirección de origen',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                  prefixIcon: Icon(
-                    Icons.location_on,
-                    color: Colors.white.withOpacity(0.6),
-                  ),
-                  suffixIcon: _isLoadingLocation
-                      ? const Padding(
-                          padding: EdgeInsets.all(12.0),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF06b6d4)),
-                            ),
-                          ),
-                        )
-                      : IconButton(
-                          icon: Icon(
-                            Icons.my_location,
-                            color: _originCoordinates != null 
-                                ? const Color(0xFF10b981) 
-                                : Colors.white.withOpacity(0.6),
-                          ),
-                          tooltip: 'Usar mi ubicación actual',
-                          onPressed: _getCurrentLocation,
-                        ),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF06b6d4),
-                      width: 2,
-                    ),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa la dirección de origen';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Destination Address
-              const Text(
-                'Dirección de destino',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _destinationController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Ingresa la dirección de destino',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                  prefixIcon: Icon(
-                    Icons.flag,
-                    color: Colors.white.withOpacity(0.6),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF06b6d4),
-                      width: 2,
-                    ),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa la dirección de destino';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Notes
-              const Text(
-                'Notas adicionales (opcional)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: 'Agrega detalles adicionales sobre el servicio...',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF06b6d4),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitRequest,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: const Color(0xFFf97316),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.send, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Crear Solicitud',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildStepper(),
+                      if (_error.isNotEmpty) _buildError(),
+                      if (_successMessage.isNotEmpty) _buildSuccess(),
+                      const SizedBox(height: 16),
+                      if (_currentStep == 1) _buildStep1(),
+                      if (_currentStep == 2) _buildStep2(),
+                      if (_currentStep == 3) _buildStep3(),
+                      if (_currentStep == 4) _buildStep4(),
                     ],
                   ),
                 ),
@@ -387,6 +378,412 @@ class _NewRequestPageState extends State<NewRequestPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStepper() {
+    return LiquidGlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      child: Row(
+        children: List.generate(_stepLabels.length * 2 - 1, (i) {
+          if (i.isOdd) {
+            return Expanded(
+              child: Container(
+                height: 2,
+                margin: const EdgeInsets.only(bottom: 20),
+                color: _currentStep > (i ~/ 2) + 1 ? const Color(0xFF10b981).withOpacity(0.5) : Colors.white.withOpacity(0.2),
+              ),
+            );
+          }
+          final step = (i ~/ 2) + 1;
+          final done = _currentStep > step;
+          final current = _currentStep == step;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: done ? const Color(0xFF10b981).withOpacity(0.6) : (current ? const Color(0xFF06b6d4) : Colors.white.withOpacity(0.15)),
+                ),
+                child: done ? const Icon(Icons.check, color: Colors.white, size: 18) : Center(child: Text('$step', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+              ),
+              if (step < _stepLabels.length) const SizedBox(width: 4),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(_error, style: const TextStyle(color: Colors.redAccent, fontSize: 13))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccess() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withOpacity(0.5)),
+      ),
+      child: Text(_successMessage, style: const TextStyle(color: Colors.greenAccent, fontSize: 13)),
+    );
+  }
+
+  Widget _buildStep1() {
+    if (_categoriesLoading) {
+      return LiquidGlassCard(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Column(
+          children: [
+            const CircularProgressIndicator(color: Color(0xFF06b6d4)),
+            const SizedBox(height: 16),
+            Text('Cargando categorías...', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
+          ],
+        ),
+      );
+    }
+    if (_categories.isEmpty) {
+      return LiquidGlassCard(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Text('No se pudieron cargar las categorías.', style: TextStyle(color: Colors.white.withOpacity(0.8))),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(onPressed: _loadCategories, child: const Text('Reintentar')),
+                const SizedBox(width: 8),
+                TextButton(onPressed: () => context.go('/requests'), child: const Text('Volver')),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    return LiquidGlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Elige una categoría', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
+          const SizedBox(height: 16),
+          ..._categories.map((cat) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: (_selectedCategory?.id == cat.id) ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _selectCategory(cat),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                            child: const Icon(Icons.category_outlined, color: Color(0xFF06b6d4), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(cat.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                                Text('${cat.services.length} servicios', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          if (_selectedCategory?.id == cat.id) const Icon(Icons.check, color: Color(0xFF06b6d4), size: 22),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _prevStep,
+                icon: const Icon(Icons.chevron_left, size: 18),
+                label: const Text('Regresar'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _nextStep,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF06b6d4)),
+                child: const Text('Siguiente'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep2() {
+    final services = _selectedCategory?.services ?? [];
+    return LiquidGlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Elige el tipo de servicio', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
+          const SizedBox(height: 16),
+          ...services.map((svc) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: (_selectedService?.id == svc.id) ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _selectService(svc),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                            child: const Icon(Icons.build_circle_outlined, color: Color(0xFF06b6d4), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(svc.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16))),
+                          if (_selectedService?.id == svc.id) const Icon(Icons.check, color: Color(0xFF06b6d4), size: 22),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _prevStep,
+                icon: const Icon(Icons.chevron_left, size: 18),
+                label: const Text('Regresar'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(onPressed: _nextStep, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF06b6d4)), child: const Text('Siguiente')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3() {
+    return LiquidGlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Indica las direcciones', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
+          const SizedBox(height: 16),
+          if (_requiresOrigin) ...[
+            Text('Dirección de origen', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
+            if (_savedAddresses.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: _savedAddresses.map((addr) => ActionChip(
+                  label: Text(addr.label, style: const TextStyle(fontSize: 12)),
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  labelStyle: const TextStyle(color: Colors.white),
+                  onPressed: () => _applySavedAddress(addr, true),
+                )).toList(),
+              ),
+              const SizedBox(height: 8),
+            ],
+            const SizedBox(height: 8),
+            TextField(
+              controller: _originController,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Escribe la dirección de origen...',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                suffixIcon: _loadingOrigin
+                    ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF06b6d4))))
+                    : IconButton(
+                        icon: const Icon(Icons.my_location, color: Color(0xFF06b6d4)),
+                        onPressed: () => _useMyLocation(true),
+                      ),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.1),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+          Text('Dirección de destino', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
+          if (_savedAddresses.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _savedAddresses.map((addr) => ActionChip(
+                label: Text(addr.label, style: const TextStyle(fontSize: 12)),
+                backgroundColor: Colors.white.withOpacity(0.1),
+                side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                labelStyle: const TextStyle(color: Colors.white),
+                onPressed: () => _applySavedAddress(addr, false),
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 8),
+          TextField(
+            controller: _destinationController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Escribe la dirección completa de destino...',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+              suffixIcon: _loadingDest
+                  ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF06b6d4))))
+                  : IconButton(
+                      icon: const Icon(Icons.my_location, color: Color(0xFF06b6d4)),
+                      onPressed: () => _useMyLocation(false),
+                    ),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('Notas (opcional)', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notesController,
+            style: const TextStyle(color: Colors.white),
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: 'Detalles adicionales...',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.1),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.2))),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _prevStep,
+                icon: const Icon(Icons.chevron_left, size: 18),
+                label: const Text('Regresar'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_destLat != null && _destLng != null) {
+                    _nextStep();
+                    return;
+                  }
+                  if (_destinationController.text.trim().isEmpty) {
+                    setState(() => _error = 'Indica la dirección de destino.');
+                    return;
+                  }
+                  await _geocodeDestination();
+                  if (mounted && _destLat != null && _destLng != null) _nextStep();
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF06b6d4)),
+                child: const Text('Siguiente'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep4() {
+    return LiquidGlassCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Resumen', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
+          const SizedBox(height: 12),
+          if (_selectedCategory != null) Text('Categoría: ${_selectedCategory!.name}', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          if (_selectedService != null) Text('Servicio: ${_selectedService!.name}', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          if (_requiresOrigin && _originDisplay.isNotEmpty) Text('Origen: $_originDisplay', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          Text('Destino: ${_destDisplay.isNotEmpty ? _destDisplay : _destinationController.text}', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          if (_estimatedDistance != null) Text('Distancia: ${_estimatedDistance!.toStringAsFixed(1)} km', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)),
+          const SizedBox(height: 16),
+          Text('Precio estimado (puedes ajustarlo)', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton.filled(
+                onPressed: _proposedPrice > 5 ? () => setState(() => _proposedPrice -= 5) : null,
+                icon: const Icon(Icons.remove),
+                style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white),
+              ),
+              const SizedBox(width: 20),
+              Text('\$${_proposedPrice.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+              const SizedBox(width: 20),
+              IconButton.filled(
+                onPressed: () => setState(() => _proposedPrice += 5),
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2), foregroundColor: Colors.white),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Incrementos de \$5', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _isSubmitting ? null : _prevStep,
+                icon: const Icon(Icons.chevron_left, size: 18),
+                label: const Text('Regresar'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3))),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GradientButton(
+                  onPressed: _isSubmitting ? null : _submitRequest,
+                  text: _isSubmitting ? 'Creando...' : 'Crear Solicitud',
+                  isLoading: _isSubmitting,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

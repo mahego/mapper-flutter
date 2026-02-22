@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
           context.go('/provider/dashboard');
           break;
         case 'cliente':
-          context.go('/client/dashboard');
+          context.go('/dashboard/cliente');
           break;
         case 'tienda':
         case 'store':
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
           context.go('/provider/home');
           break;
         case 'cliente':
-          context.go('/client/home');
+          context.go('/dashboard/cliente');
           break;
         case 'tienda':
           context.go('/store/pos');
@@ -174,7 +174,7 @@ class _LoginPageState extends State<LoginPage> {
           context.go('/provider/home');
           break;
         case 'cliente':
-          context.go('/client/home');
+          context.go('/dashboard/cliente');
           break;
         case 'tienda':
           context.go('/store/pos');

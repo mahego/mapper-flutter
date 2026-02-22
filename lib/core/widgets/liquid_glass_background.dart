@@ -36,68 +36,77 @@ class _LiquidGlassBackgroundState extends State<LiquidGlassBackground>
 
   @override
   Widget build(BuildContext context) {
+    // Paridad con Angular .liquid-aurora-bg
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment(0.7, 0.5),
+          end: Alignment(-0.5, 0.5),
+          stops: [0.0, 0.35, 0.7, 1.0],
           colors: [
             Color(0xFF0b1020),
-            Color(0xFF0f172a),
-            Color(0xFF111827),
+            Color(0xFF0e1a32),
+            Color(0xFF0c1326),
+            Color(0xFF050a14),
           ],
         ),
       ),
       child: Stack(
         children: [
-          // Animated gradient orbs
+          // Radial gradients (paridad Angular liquid-aurora: 10% 20%, 80% 0%, 25% 80%)
           if (widget.showOrbs) ...[
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Positioned(
-                  left: 50 + (100 * _animationController.value),
-                  top: 50 + (80 * _animationController.value),
-                  child: Container(
-                    width: 300,
-                    height: 300,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFF06b6d4).withOpacity(0.18),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+            Positioned(
+              left: -40,
+              top: 80,
+              child: Container(
+                width: 320,
+                height: 320,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF6366F1).withOpacity(0.25),
+                      Colors.transparent,
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
-            AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Positioned(
-                  right: 50 + (80 * (1 - _animationController.value)),
-                  top: 100 + (60 * _animationController.value),
-                  child: Container(
-                    width: 350,
-                    height: 350,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFFf97316).withOpacity(0.20),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+            Positioned(
+              right: -20,
+              top: 0,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF0EA5E9).withOpacity(0.22),
+                      Colors.transparent,
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
+            ),
+            Positioned(
+              left: 80,
+              bottom: 120,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFEC4899).withOpacity(0.18),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
-          // Content
           widget.child,
         ],
       ),

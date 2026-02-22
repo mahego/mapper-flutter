@@ -25,6 +25,7 @@ class ApiEndpoints {
 
   // Services & Requests
   static const String services = '/services';
+  static const String serviceCategories = '/services/service-categories';
   static const String requests = '/requests';
   static const String myRequests = '/requests/my-requests';
   static const String expressRequest = '/requests/express';
@@ -32,6 +33,10 @@ class ApiEndpoints {
   static const String incomingRequests = '/requests/incoming';
   static String requestAccept(String requestId) => '/requests/$requestId/accept';
   static String requestDetail(String requestId) => '/requests/$requestId';
+  static String requestOffers(String requestId) => '/requests/$requestId/offers';
+  static String acceptCounterOffer(String requestId) => '/requests/$requestId/accept-counteroffer';
+  static String rejectCounterOffer(String requestId) => '/requests/$requestId/reject-counteroffer';
+  static String cancelRequest(String requestId) => '/requests/$requestId/cancel';
 
   // Provider
   static const String providerStats = '/providers/stats';

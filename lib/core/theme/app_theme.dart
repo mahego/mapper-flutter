@@ -1,31 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Tokens de diseño extraídos de fletapp-angular (styles.scss, componentes).
 class AppTheme {
-  // Colors - Homologation with fletapp-angular (Tailwind Slate & Blue)
-  
-  // Primary Blue (Tailwind Blue 500: #3b82f6)
-  static const Color primaryColor = Color(0xFF3B82F6);
-  static const Color primaryDark = Color(0xFF1D4ED8); // Blue 700
-  static const Color primaryLight = Color(0xFF60A5FA); // Blue 400
+  // === Glass (Angular :root) ===
+  static const Color glassSurface = Color(0x14FFFFFF); // rgba(255,255,255,0.08)
+  static double get glassSurfaceOpacity => 0.08;
+  static double get glassBorderOpacity => 0.16;
+  static double get glassHighlightOpacity => 0.65;
+  static const double glassBlur = 16.0;
+
+  // === Acentos (Angular --accent, --accent-2) ===
+  static const Color accentOrange = Color(0xFFf97316); // Orange 500
+  static const Color accentCyan = Color(0xFF06b6d4);   // Cyan 500
+
+  // Primary = acento naranja para CTAs
+  static const Color primaryColor = accentOrange;
+  static const Color primaryDark = Color(0xFFEA580C);  // Orange 600
+  static const Color primaryLight = Color(0xFFfb923c);  // Orange 400
   static const Color primary400 = primaryLight;
   static const Color primary500 = primaryColor;
-  static const Color primary600 = Color(0xFF2563EB); // Blue 600
-  static const Color accent = primaryColor;
+  static const Color primary600 = Color(0xFFEA580C);
+  static const Color accent = accentOrange;
+  static const Color accent2 = accentCyan;
 
-  // Slate Scale (Backgrounds & Surfaces)
-  static const Color slate950 = Color(0xFF020617); // Main Background
-  static const Color slate900 = Color(0xFF0F172A); // Card/Surface
-  static const Color slate800 = Color(0xFF1E293B); // Lighter Surface
-  static const Color slate700 = Color(0xFF334155); // Borders/Dividers
-  static const Color slate400 = Color(0xFF94A3B8); // Secondary Text
-  static const Color slate200 = Color(0xFFE2E8F0); // Primary Text (Dark Mode)
+  // Slate (Angular bg-slate-950, body)
+  static const Color slate950 = Color(0xFF020617);     // #0b1020 → 0x0b1020
+  static const Color ink = Color(0xFF0b1020);          // --ink
+  static const Color slate900 = Color(0xFF0F172A);     // Card/Surface
+  static const Color slate800 = Color(0xFF1E293B);
+  static const Color slate700 = Color(0xFF334155);
+  static const Color slate400 = Color(0xFF94A3B8);
+  static const Color slate200 = Color(0xFFE2E8F0);
   static const Color white = Colors.white;
 
-  // Semantic Colors
-  static const Color errorColor = Color(0xFFEF4444); // Red 500
-  static const Color successColor = Color(0xFF22C55E); // Green 500
-  static const Color warningColor = Color(0xFFF59E0B); // Amber 500
+  // Semantic
+  static const Color errorColor = Color(0xFFEF4444);
+  static const Color successColor = Color(0xFF22C55E);
+  static const Color warningColor = Color(0xFFF59E0B);
   
   // Light Theme (Optional for now, focusing on Dark "Tropical" Theme)
   static ThemeData get lightTheme {
