@@ -4,9 +4,10 @@ import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
-import '../../../../core/widgets/liquid_glass_card.dart';
 import '../../../../core/widgets/liquid_glass_bottom_nav.dart';
 import '../../../../core/widgets/notifications_panel.dart';
+import '../../../../core/validators/input_validators.dart';
+import '../../../../core/utils/error_handler.dart';
 import '../../../client/domain/repositories/request_repository.dart';
 
 /// Perfil de usuario (paridad Angular ProfileComponent): datos y direcciones guardadas.
@@ -48,6 +49,11 @@ class _ProfilePageState extends State<ProfilePage> {
   String _confirmPassword = '';
   bool _changingPassword = false;
   String? _passwordError;
+  
+  // Password field errors (for validation)
+  String? _currentPasswordError;
+  String? _newPasswordError;
+  String? _confirmPasswordError;
 
   @override
   void initState() {
@@ -645,6 +651,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _newPassword = '';
     _confirmPassword = '';
     _passwordError = null;
+    _currentPasswordError = null;
+    _newPasswordError = null;
+    _confirmPasswordError = null;
 
     showDialog(
       context: context,
@@ -660,75 +669,169 @@ class _ProfilePageState extends State<ProfilePage> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Contraseña actual',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.lock, color: Color(0xFF06b6d4)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Contraseña actual',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          prefixIcon: const Icon(Icons.lock, color: Color(0xFF06b6d4)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _currentPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _currentPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            _currentPassword = value;
+                            _currentPasswordError = InputValidators.validateCurrentPassword(value);
+                          });
+                        },
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
-                      ),
-                    ),
-                    onChanged: (value) => setDialogState(() => _currentPassword = value),
+                      if (_currentPasswordError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            _currentPasswordError!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Nueva contraseña',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.lock_open, color: Color(0xFF06b6d4)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Nueva contraseña',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          prefixIcon: const Icon(Icons.lock_open, color: Color(0xFF06b6d4)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _newPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _newPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            _newPassword = value;
+                            _newPasswordError = InputValidators.validateNewPassword(value);
+                            // Update confirm password error if it was already validated
+                            if (_confirmPassword.isNotEmpty) {
+                              _confirmPasswordError = InputValidators.validatePasswordConfirmation(
+                                _confirmPassword,
+                                value,
+                              );
+                            }
+                          });
+                        },
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
-                      ),
-                    ),
-                    onChanged: (value) => setDialogState(() => _newPassword = value),
+                      if (_newPasswordError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            _newPasswordError!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Confirmar contraseña',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                      prefixIcon: const Icon(Icons.check_circle, color: Color(0xFF06b6d4)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        obscureText: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Confirmar contraseña',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          prefixIcon: const Icon(Icons.check_circle, color: Color(0xFF06b6d4)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _confirmPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: _confirmPasswordError != null
+                                  ? Colors.red.withOpacity(0.5)
+                                  : Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xFF06b6d4)),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            _confirmPassword = value;
+                            _confirmPasswordError = InputValidators.validatePasswordConfirmation(
+                              value,
+                              _newPassword,
+                            );
+                          });
+                        },
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFF06b6d4)),
-                      ),
-                    ),
-                    onChanged: (value) => setDialogState(() => _confirmPassword = value),
+                      if (_confirmPasswordError != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            _confirmPasswordError!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
                   ),
-                  if (_passwordError != null) ...[
+                  if (_passwordError != null) ..[
                     const SizedBox(height: 12),
                     Text(
                       _passwordError!,
@@ -779,21 +882,32 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _changePassword(BuildContext dialogContext) async {
     setState(() => _passwordError = null);
 
-    // Validation
-    if (_currentPassword.isEmpty) {
-      setState(() => _passwordError = 'Ingresa tu contraseña actual');
+    // Validation using InputValidators
+    final currentPasswordError = InputValidators.validateCurrentPassword(_currentPassword);
+    final newPasswordError = InputValidators.validateNewPassword(_newPassword);
+    final confirmPasswordError = InputValidators.validatePasswordConfirmation(
+      _confirmPassword,
+      _newPassword,
+    );
+    
+    // Update field errors
+    setState(() {
+      _currentPasswordError = currentPasswordError;
+      _newPasswordError = newPasswordError;
+      _confirmPasswordError = confirmPasswordError;
+    });
+
+    // If any validation failed, show the first error
+    if (currentPasswordError != null) {
+      setState(() => _passwordError = currentPasswordError);
       return;
     }
-    if (_newPassword.isEmpty) {
-      setState(() => _passwordError = 'Ingresa una nueva contraseña');
+    if (newPasswordError != null) {
+      setState(() => _passwordError = newPasswordError);
       return;
     }
-    if (_newPassword.length < 6) {
-      setState(() => _passwordError = 'La contraseña debe tener mínimo 6 caracteres');
-      return;
-    }
-    if (_newPassword != _confirmPassword) {
-      setState(() => _passwordError = 'Las contraseñas no coinciden');
+    if (confirmPasswordError != null) {
+      setState(() => _passwordError = confirmPasswordError);
       return;
     }
 
@@ -810,12 +924,16 @@ class _ProfilePageState extends State<ProfilePage> {
           _newPassword = '';
           _confirmPassword = '';
           _passwordError = null;
+          _currentPasswordError = null;
+          _newPasswordError = null;
+          _confirmPasswordError = null;
           _changingPassword = false;
         });
       }
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e);
       setState(() {
-        _passwordError = 'Error al cambiar contraseña: ${e.toString().replaceAll('Exception: ', '')}';
+        _passwordError = errorMessage;
         _changingPassword = false;
       });
     }
