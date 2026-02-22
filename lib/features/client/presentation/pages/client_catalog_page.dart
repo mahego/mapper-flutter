@@ -830,13 +830,34 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
     );
   }
 
-  void _checkoutCart() {
+  Future<void> _checkoutCart() async {
+    final itemCount = _cart.length;
+    final total = _cart.values.fold<double>(0, (sum, item) {
+      return sum + ((item['price'] as double) * (item['quantity'] as int));
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${_cart.length} producto(s) en carrito. Funcionalidad de pago próximamente.'),
+        content: Text('$itemCount producto(s) por \$$total. Funcionalidad de pago próximamente.'),
         backgroundColor: const Color(0xFF06b6d4),
         duration: const Duration(seconds: 3),
       ),
     );
+
+    // TODO: Implementar pago real
+    // Por ahora, limpiar carrito después de "checkout" simulado
+    // En producción, esto sucedería después de confirmar el pago
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    try {
+      setState(() {
+        _cart.clear();
+        _cartItemCount = 0;
+      });
+      await _cartService.clearCart();
+      print('[ClientCatalogPage] Carrito limpiado después de checkout');
+    } catch (e) {
+      print('Error clearing cart after checkout: $e');
+    }
   }
 }
