@@ -1,9 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:liquid_glass/liquid_glass.dart';
 
 /// Card con efecto Liquid Glass (backdrop blur + border)
-/// Usa el paquete liquid_glass para efectos mejorados
+/// Usa efectos glassmorphism modernos con blur y translucidez
 class LiquidGlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -24,17 +23,39 @@ class LiquidGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: width,
       height: height,
-      child: LiquidGlass(
-        blur: blurAmount,
-        opacity: 0.08,
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        tint: Colors.white,
-        child: Padding(
-          padding: padding ?? const EdgeInsets.all(32),
-          child: child,
+        border: Border.all(
+          color: Colors.white.withOpacity(0.16),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: blurAmount,
+            sigmaY: blurAmount,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.08),
+                  Colors.white.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: padding ?? const EdgeInsets.all(32),
+              child: child,
+            ),
+          ),
         ),
       ),
     );

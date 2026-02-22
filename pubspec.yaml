@@ -26,7 +26,7 @@ dependencies:
   # UI Components
   cupertino_icons: ^1.0.6
   google_fonts: ^6.1.0
-  liquid_glass: ^0.0.2
+  liquid_glass_easy: ^1.0.6
   lucide_icons_flutter: ^1.2.1
   
   # Barcode Scanner

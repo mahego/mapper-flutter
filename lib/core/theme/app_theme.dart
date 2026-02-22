@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:liquid_glass/liquid_glass.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Tokens de diseño extraídos de fletapp-angular (styles.scss, componentes).
