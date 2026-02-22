@@ -181,7 +181,12 @@ class _RequestsPageState extends State<RequestsPage> {
                       children: [
                         Icon(f.$3, size: 16, color: selected ? Colors.black87 : Colors.white70),
                         const SizedBox(width: 6),
-                        Text(f.$2),
+                        Flexible(
+                          child: Text(
+                            f.$2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                     selected: selected,
