@@ -3,8 +3,7 @@ class AppConstants {
   static const String appName = 'Mapper';
   static const String appVersion = '1.0.0';
 
-  /// API base URL (incluye /api). Mismo backend que Angular (environment.prod).
-  /// Local: http://10.0.2.2:3000/api (Android) o http://localhost:3000/api (iOS).
+  /// API base URL (incluye /api). Backend en producción (Fly.io).
   static const String baseUrl = 'https://flet-app-mahegots.fly.dev/api';
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;

@@ -1,296 +1,237 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/client_bottom_nav.dart';
+import '../../domain/entities/client_stats.dart';
+import '../../domain/repositories/client_repository.dart';
+import '../widgets/client_stat_card.dart';
+import '../widgets/quick_action_card.dart';
 
-class ClientDashboardPage extends StatelessWidget {
+class ClientDashboardPage extends StatefulWidget {
   const ClientDashboardPage({super.key});
+
+  @override
+  State<ClientDashboardPage> createState() => _ClientDashboardPageState();
+}
+
+class _ClientDashboardPageState extends State<ClientDashboardPage> {
+  final _clientRepository = ClientRepository(ApiClient());
+  ClientStats? _stats;
+  bool _isLoading = true;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      final stats = await _clientRepository.getStats();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Error al cargar estadísticas: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return TropicalScaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hola, Juan 👋',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+      appBar: AppBar(
+        title: const Text('Panel de Cliente'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      bottomNavigationBar: const ClientBottomNav(currentIndex: 0),
+      body: RefreshIndicator(
+        onRefresh: _loadStats,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              const Text(
+                '¡Hola! 👋',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Gestiona tus solicitudes, tiendas y seguimiento',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Loading State
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF06b6d4)),
+                    ),
+                  ),
+                ),
+
+              // Error State
+              if (_error.isNotEmpty && !_isLoading)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.withOpacity(0.7),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _error,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadStats,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF06b6d4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: AppTheme.primary400, size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Calle Principal 123',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              const Icon(Icons.keyboard_arrow_down, color: Colors.white70, size: 16),
-                            ],
-                          ),
-                        ],
-                      ),
-                      CircleAvatar(
-                        backgroundColor: AppTheme.slate800,
-                        child: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Search Bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.slate800.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: Colors.white54),
-                        const SizedBox(width: 12),
-                        Text(
-                          '¿Qué se te antoja hoy?',
-                          style: TextStyle(color: Colors.white54, fontSize: 16),
+                          child: const Text('Reintentar'),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Categories / Services
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  _CategoryItem(icon: Icons.restaurant, label: 'Comida', color: Colors.orange),
-                  _CategoryItem(icon: Icons.local_grocery_store, label: 'Super', color: Colors.green),
-                  _CategoryItem(icon: Icons.medication, label: 'Farmacia', color: Colors.blue),
-                  _CategoryItem(icon: Icons.local_shipping, label: 'Envíos', color: Colors.purple),
-                  _CategoryItem(icon: Icons.liquor, label: 'Licores', color: Colors.red),
-                ],
-              ),
-            ),
-          ),
-
-          // Banner
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)], // Sky to Indigo
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: Stack(
+
+              // Stats Cards
+              if (_stats != null && !_isLoading) ...[
+                // Stats Grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.4,
                   children: [
-                    Positioned(
-                      right: -20,
-                      bottom: -20,
-                      child: Icon(Icons.local_offer, size: 150, color: Colors.white.withOpacity(0.1)),
+                    ClientStatCard(
+                      title: 'Total Solicitudes',
+                      value: _stats!.totalRequests.toString(),
+                      icon: Icons.receipt_long,
+                      color: const Color(0xFF06b6d4),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Envío GRATIS',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Space Grotesk',
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'En tus primeros 3 pedidos',
-                            style: TextStyle(color: Colors.white.withOpacity(0.9)),
-                          ),
-                        ],
-                      ),
+                    ClientStatCard(
+                      title: 'Activas',
+                      value: _stats!.activeRequests.toString(),
+                      icon: Icons.autorenew,
+                      color: const Color(0xFFf97316),
+                    ),
+                    ClientStatCard(
+                      title: 'Completadas',
+                      value: _stats!.completedRequests.toString(),
+                      icon: Icons.check_circle,
+                      color: const Color(0xFF10b981),
+                    ),
+                    ClientStatCard(
+                      title: 'Pendientes',
+                      value: _stats!.pendingRequests.toString(),
+                      icon: Icons.pending,
+                      color: const Color(0xFFf59e0b),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
+                const SizedBox(height: 32),
 
-          // Stores List Header
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tiendas Cercanas',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('Ver todas'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Stores List
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return _StoreCard(index: index);
-              },
-              childCount: 5,
-            ),
-          ),
-          
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _CategoryItem({required this.icon, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 20.0),
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppTheme.slate800,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StoreCard extends StatelessWidget {
-  final int index;
-
-  const _StoreCard({required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.slate900,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {},
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                // Store Image Placeholder
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppTheme.slate800,
-                    borderRadius: BorderRadius.circular(16),
-                    image: const DecorationImage(
-                       image: NetworkImage('https://via.placeholder.com/80'), 
-                       fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: const Icon(Icons.store, color: Colors.white24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tienda ${index + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Comida Rápida • Hamburguesas',
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
+                // Quick Actions (Hidden on mobile as they're in bottom nav)
+                MediaQuery.of(context).size.width >= 768
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 14),
-                          const SizedBox(width: 4),
-                          const Text('4.8', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.access_time, color: Colors.white54, size: 14),
-                          const SizedBox(width: 4),
-                          const Text('15-25 min', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                          const Text(
+                            'Acciones rápidas',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 1.2,
+                            children: [
+                              QuickActionCard(
+                                title: 'Nueva Solicitud',
+                                description: 'Crea y revisa solicitudes de servicio',
+                                icon: Icons.add_circle,
+                                iconColor: const Color(0xFFf97316),
+                                onTap: () => context.push('/requests/new'),
+                              ),
+                              QuickActionCard(
+                                title: 'Mis Solicitudes',
+                                description: 'Estatus en tiempo real',
+                                icon: Icons.list_alt,
+                                iconColor: const Color(0xFF06b6d4),
+                                onTap: () => context.go('/requests'),
+                              ),
+                              QuickActionCard(
+                                title: 'Tracking en Vivo',
+                                description: 'Ubica tu servicio activo',
+                                icon: Icons.location_on,
+                                iconColor: const Color(0xFF10b981),
+                                onTap: () => context.go('/cliente/tracking'),
+                              ),
+                              QuickActionCard(
+                                title: 'Subastas',
+                                description: 'Puja, gana o crea subastas',
+                                icon: Icons.gavel,
+                                iconColor: const Color(0xFFf59e0b),
+                                onTap: () => context.go('/auctions'),
+                              ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
+                      )
+                    : const SizedBox.shrink(),
               ],
-            ),
+            ],
           ),
         ),
       ),

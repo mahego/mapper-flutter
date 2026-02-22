@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
+import '../../../../core/widgets/provider_bottom_nav.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -9,6 +10,7 @@ class ProfilePage extends StatelessWidget {
     final theme = Theme.of(context);
     
     return TropicalScaffold(
+      bottomNavigationBar: const ProviderBottomNav(currentIndex: 5),
       appBar: AppBar(
         title: const Text('Profile'),
         backgroundColor: Colors.transparent,

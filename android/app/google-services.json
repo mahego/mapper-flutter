@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "95858401534",
+    "project_id": "envapp-7400e",
+    "storage_bucket": "envapp-7400e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:95858401534:android:a04a793c15d5f2254d85af",
+        "android_client_info": {
+          "package_name": "com.mapper.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "95858401534-eada9ghogv7rrp8s7gc5vt5mra92903h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5EMBYB7ODBA4p_ur5uNEuasDQly2_Liw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "95858401534-eada9ghogv7rrp8s7gc5vt5mra92903h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

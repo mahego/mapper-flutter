@@ -1,62 +1,18 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
-import '../../../../core/network/api_client.dart';
-import '../../../../core/network/api_endpoints.dart';
+import '../entities/auth_response.dart';
+import '../entities/user.dart';
 
-class AuthRepository {
-  final ApiClient _apiClient;
-
-  AuthRepository({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
-
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.login,
-        data: {'email': email, 'password': password},
-      );
-      
-      final data = response.data;
-      if (data != null && data['token'] != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', data['token']);
-        // Store user info if available
-        if (data['user'] != null) {
-          await prefs.setString('user_role', data['user']['role'] ?? '');
-          await prefs.setString('user_name', data['user']['name'] ?? '');
-        }
-      }
-      return data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.register,
-        data: userData,
-      );
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('user_role');
-    await prefs.remove('user_name');
-  }
-
-  Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey('auth_token');
-  }
-  
-  Future<String?> getUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_role');
-  }
+abstract class AuthRepository {
+  Future<AuthResponse> login(String email, String password);
+  Future<AuthResponse> register({
+    required String email,
+    required String password,
+    required String name,
+    required String role,
+    String? phone,
+  });
+  Future<void> logout();
+  Future<String> refreshToken(String refreshToken);
+  Future<User> getCurrentUser();
+  Future<void> forgotPassword(String email);
+  Future<void> resetPassword(String token, String newPassword);
 }

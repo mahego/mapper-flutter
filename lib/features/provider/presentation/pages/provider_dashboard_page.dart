@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../domain/repositories/provider_repository.dart';
+import '../../domain/repositories/request_repository.dart';
+import '../../domain/repositories/shift_repository.dart';
+import '../../domain/entities/provider_stats.dart';
+import '../../domain/entities/earnings.dart';
+import '../../domain/entities/subscription.dart';
+import '../../domain/entities/express_request.dart';
+import '../../domain/entities/shift.dart';
+import '../widgets/stat_card.dart';
+import '../widgets/request_card.dart';
+import '../widgets/subscription_status_card.dart';
 
 class ProviderDashboardPage extends StatefulWidget {
   const ProviderDashboardPage({super.key});
@@ -10,338 +23,587 @@ class ProviderDashboardPage extends StatefulWidget {
 }
 
 class _ProviderDashboardPageState extends State<ProviderDashboardPage> {
+  final _providerRepo = ProviderRepository();
+  final _requestRepo = RequestRepository();
+  final _shiftRepo = ShiftRepository();
+
   bool isOnline = false;
+  bool isTogglingOnline = false;
+  
+  ProviderStats? stats;
+  Earnings? earnings;
+  Subscription? subscription;
+  List<ExpressRequest> expressRequests = [];
+  Shift? activeShiftToday;
+
+  bool isLoadingStats = true;
+  bool isLoadingEarnings = true;
+  bool isLoadingSubscription = true;
+  bool isLoadingRequests = true;
+  bool isLoadingShift = true;
+
+  String expandedSection = 'requests'; // 'requests' or 'stats'
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([
+      _loadOnlineStatus(),
+      _loadStats(),
+      _loadEarnings(),
+      _loadSubscription(),
+      _loadExpressRequests(),
+      _loadActiveShift(),
+    ]);
+  }
+
+  Future<void> _loadOnlineStatus() async {
+    try {
+      final status = await _providerRepo.getOnlineStatus();
+      if (mounted) {
+        setState(() {
+          isOnline = status;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading online status: $e');
+    }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final data = await _providerRepo.getStats();
+      if (mounted) {
+        setState(() {
+          stats = data;
+          isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading stats: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingStats = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadEarnings() async {
+    try {
+      final data = await _providerRepo.getEarnings(period: 'month');
+      if (mounted) {
+        setState(() {
+          earnings = data;
+          isLoadingEarnings = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading earnings: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingEarnings = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSubscription() async {
+    try {
+      final data = await _providerRepo.getCurrentSubscription();
+      if (mounted) {
+        setState(() {
+          subscription = data;
+          isLoadingSubscription = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading subscription: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingSubscription = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadExpressRequests() async {
+    try {
+      final data = await _requestRepo.getExpressRequests();
+      if (mounted) {
+        setState(() {
+          expressRequests = data;
+          isLoadingRequests = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading requests: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingRequests = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadActiveShift() async {
+    try {
+      final shift = await _shiftRepo.getActiveShiftToday();
+      if (mounted) {
+        setState(() {
+          activeShiftToday = shift;
+          isLoadingShift = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading active shift: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingShift = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleOnlineStatus() async {
+    if (isTogglingOnline) return;
+
+    setState(() {
+      isTogglingOnline = true;
+    });
+
+    try {
+      final newStatus = !isOnline;
+      await _providerRepo.setOnlineStatus(newStatus);
+      if (mounted) {
+        setState(() {
+          isOnline = newStatus;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error toggling online status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cambiar estado'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isTogglingOnline = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _acceptRequest(ExpressRequest request) async {
+    try {
+      await _requestRepo.acceptRequest(request.id.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Solicitud aceptada'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadExpressRequests();
+      }
+    } catch (e) {
+      debugPrint('Error accepting request: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al aceptar solicitud'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currencyFormat = NumberFormat.currency(locale: 'es_MX', symbol: '\$');
+
     return TropicalScaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Header / Status
-          SliverAppBar(
-            backgroundColor: Colors.transparent,
-            expandedHeight: 120,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withOpacity(0.7),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+      body: RefreshIndicator(
+        onRefresh: _loadInitialData,
+        child: CustomScrollView(
+          slivers: [
+            // Header / Status
+            SliverAppBar(
+              backgroundColor: Colors.transparent,
+              expandedHeight: 120,
+              floating: false,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
+                titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
+                title: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: isOnline ? Colors.greenAccent : Colors.redAccent,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isOnline ? Colors.greenAccent : Colors.redAccent).withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isOnline ? 'En Línea' : 'Desconectado',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
               ),
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 20),
-              title: Row(
-                children: [
-                   Container(
-                    width: 12, 
-                    height: 12, 
+              actions: [
+                if (isTogglingOnline)
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  Switch(
+                    value: isOnline,
+                    onChanged: (val) => _toggleOnlineStatus(),
+                    activeColor: Colors.greenAccent,
+                    activeTrackColor: Colors.green.withOpacity(0.4),
+                    inactiveThumbColor: Colors.redAccent,
+                    inactiveTrackColor: Colors.red.withOpacity(0.4),
+                  ),
+                const SizedBox(width: 16),
+              ],
+            ),
+
+            // Subscription Status
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                child: SubscriptionStatusCard(
+                  subscription: subscription,
+                  isLoading: isLoadingSubscription,
+                  onManageSubscription: () {
+                    context.push('/provider/subscriptions');
+                  },
+                ),
+              ),
+            ),
+
+            // Active Shift Today
+            if (!isLoadingShift && activeShiftToday != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isOnline ? Colors.greenAccent : Colors.redAccent, 
-                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primary600, AppTheme.primary500],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: (isOnline ? Colors.greenAccent : Colors.redAccent).withOpacity(0.5),
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                          color: AppTheme.primary500.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.store, color: Colors.white, size: 24),
+                            SizedBox(width: 8),
+                            Text(
+                              'Turno activo hoy',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          activeShiftToday!.storeName ?? 'Tienda #${activeShiftToday!.storeId}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Estado: ${activeShiftToday!.isInProgress ? "En progreso" : "Asignado"}',
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // TODO: Navigate to POS when implemented
+                              context.push('/provider/bolsa-trabajo');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: AppTheme.primary600,
+                            ),
+                            child: const Text('IR AL PUNTO DE VENTA'),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isOnline ? 'En Línea' : 'Desconectado',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
+                ),
               ),
-            ),
-            actions: [
-              Switch(
-                value: isOnline, 
-                onChanged: (val) {
-                  setState(() {
-                    isOnline = val;
-                  });
-                },
-                activeColor: Colors.greenAccent,
-                activeTrackColor: Colors.green.withOpacity(0.4),
-                inactiveThumbColor: Colors.redAccent,
-                inactiveTrackColor: Colors.red.withOpacity(0.4),
-              ),
-              const SizedBox(width: 16),
-            ],
-          ),
 
-          // Stats Cards
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Ganancias hoy',
-                      value: '\$850.00',
-                      icon: Icons.attach_money,
-                      color: Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _StatCard(
-                      label: 'Viajes',
-                      value: '12',
-                      icon: Icons.motorcycle,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Active Assignment (if any)
-          if (isOnline)
+            // Stats Cards Section Toggle
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppTheme.primary600, AppTheme.primary500],
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => expandedSection = 'requests'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: expandedSection == 'requests'
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.transparent,
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: expandedSection == 'requests'
+                                ? Colors.white
+                                : Colors.white38,
+                          ),
+                        ),
+                        child: const Text('Solicitudes'),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primary500.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => expandedSection = 'stats'),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: expandedSection == 'stats'
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.transparent,
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: expandedSection == 'stats'
+                                ? Colors.white
+                                : Colors.white38,
+                          ),
+                        ),
+                        child: const Text('Estadísticas'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Stats Cards (when stats section is expanded)
+            if (expandedSection == 'stats')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Viaje en curso',
-                        style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 12),
                       Row(
                         children: [
-                          const Icon(Icons.store, color: Colors.white),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Burger King Centro', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                                const Text('Recoger pedido #1234', style: TextStyle(color: Colors.white70)),
-                              ],
+                            child: StatCard(
+                              label: 'Ganancias del mes',
+                              value: isLoadingEarnings
+                                  ? '...'
+                                  : currencyFormat.format(earnings?.summary.netAmount ?? 0),
+                              icon: Icons.attach_money,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: StatCard(
+                              label: 'Servicios',
+                              value: isLoadingStats
+                                  ? '...'
+                                  : '${stats?.completedRequests ?? 0}',
+                              icon: Icons.check_circle,
+                              color: Colors.blue,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const SizedBox(height: 1, width: double.infinity, child: ColoredBox(color: Colors.white24)),
-                      const SizedBox(height: 16),
-                       Row(
+                      Row(
                         children: [
-                          const Icon(Icons.person, color: Colors.white),
-                          const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Juan Pérez', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                                const Text('Calle 5 de Mayo #45', style: TextStyle(color: Colors.white70)),
-                              ],
+                            child: StatCard(
+                              label: 'Pendientes',
+                              value: isLoadingStats
+                                  ? '...'
+                                  : '${stats?.pendingRequests ?? 0}',
+                              icon: Icons.pending_actions,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: StatCard(
+                              label: 'Promedio/servicio',
+                              value: isLoadingEarnings
+                                  ? '...'
+                                  : currencyFormat.format(earnings?.summary.avgPerRequest ?? 0),
+                              icon: Icons.trending_up,
+                              color: Colors.purple,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppTheme.primary600,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('VER DETALLES'),
-                        ),
-                      ),
                     ],
                   ),
                 ),
               ),
-            ),
 
-          // Incoming Requests List
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Solicitudes Disponibles',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
-              ),
-            ),
-          ),
-          
-          if (!isOnline)
-             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Center(
-                  child: Column(
+            // Requests Section Title
+            if (expandedSection == 'requests')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.cloud_off, size: 60, color: Colors.white24),
-                      SizedBox(height: 16),
                       Text(
-                        'Conéctate para recibir solicitudes',
-                        style: TextStyle(color: Colors.white54),
+                        'Solicitudes Disponibles',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
+                      if (isLoadingRequests)
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                     ],
                   ),
                 ),
               ),
-            )
-          else 
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _RequestCard(index: index);
-                },
-                childCount: 3,
-              ),
-            ),
+
+            // Requests List or Empty State
+            if (expandedSection == 'requests')
+              if (!isOnline)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.cloud_off, size: 60, color: Colors.white24),
+                          SizedBox(height: 16),
+                          Text(
+                            'Conéctate para recibir solicitudes',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (isLoadingRequests)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                )
+              else if (expressRequests.isEmpty)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.inbox_outlined, size: 60, color: Colors.white24),
+                          SizedBox(height: 16),
+                          Text(
+                            'No hay solicitudes disponibles',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final request = expressRequests[index];
+                      return RequestCard(
+                        request: request,
+                        onAccept: () => _acceptRequest(request),
+                        onReject: () {
+                          // TODO: Implement reject
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Rechazar solicitud')),
+                          );
+                        },
+                        onTap: () {
+                          // TODO: Navigate to request detail
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Ver detalle de ${request.id}')),
+                          );
+                        },
+                      );
+                    },
+                    childCount: expressRequests.length,
+                  ),
+                ),
 
             const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.slate800.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-}
-
-class _RequestCard extends StatelessWidget {
-  final int index;
-
-  const _RequestCard({required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.slate900,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text('Mandadito', style: TextStyle(color: Colors.orange, fontSize: 12)),
-              ),
-              const Text('\$45.00', style: TextStyle(color: Colors.greenAccent, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.my_location, color: Colors.blue, size: 16),
-              const SizedBox(width: 8),
-              const Expanded(child: Text('Origen: Av. Reforma 222', style: TextStyle(color: Colors.white70))),
-            ],
-          ),
-          Container(
-             margin: const EdgeInsets.only(left: 7),
-             height: 20,
-             width: 2,
-             color: Colors.white10,
-          ),
-          Row(
-            children: [
-              const Icon(Icons.location_on, color: Colors.red, size: 16),
-              const SizedBox(width: 8),
-              const Expanded(child: Text('Destino: Colonia Centro #10', style: TextStyle(color: Colors.white70))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
-                  ),
-                  child: const Text('Rechazar'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Aceptar'),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

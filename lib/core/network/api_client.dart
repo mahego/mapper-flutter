@@ -60,4 +60,13 @@ class ApiClient {
   Future<Response> delete(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
     return _dio.delete(path, data: data, queryParameters: queryParameters);
   }
+
+  // Update authorization token dynamically
+  void updateToken(String? token) {
+    if (token != null) {
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+    } else {
+      _dio.options.headers.remove('Authorization');
+    }
+  }
 }

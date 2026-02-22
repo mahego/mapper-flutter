@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>95858401534-iadg11ahm6oih0n4t4a9j0okvf9fhi1o.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.95858401534-iadg11ahm6oih0n4t4a9j0okvf9fhi1o</string>
+	<key>API_KEY</key>
+	<string>AIzaSyALi3E2oSHDCpx3ihKfy7kEwZ6Uu4oP8rI</string>
+	<key>GCM_SENDER_ID</key>
+	<string>95858401534</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.mapper.app</string>
+	<key>PROJECT_ID</key>
+	<string>envapp-7400e</string>
+	<key>STORAGE_BUCKET</key>
+	<string>envapp-7400e.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:95858401534:ios:85c1e6a124be8ca74d85af</string>
+</dict>
+</plist>
