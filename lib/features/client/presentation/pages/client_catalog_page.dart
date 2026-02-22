@@ -128,6 +128,34 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
     }
   }
 
+  Future<void> _saveCartToStorage() async {
+    if (_cart.isEmpty) {
+      // Si el carrito está vacío, borrarlo del storage
+      try {
+        await _cartService.clearCart();
+      } catch (e) {
+        print('Error clearing cart from storage: $e');
+      }
+      return;
+    }
+
+    try {
+      final total = _cart.values.fold<double>(0, (sum, item) {
+        return sum + ((item['price'] as double) * (item['quantity'] as int));
+      });
+
+      await _cartService.saveCart(
+        items: _cart,
+        storeId: widget.storeId,
+        total: total,
+      );
+      
+      print('[ClientCatalogPage] Carrito guardado: ${_cart.length} items');
+    } catch (e) {
+      print('Error saving cart to storage: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -612,6 +640,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                             };
                             _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
                           });
+                          _saveCartToStorage();
                           Navigator.pop(context);
                           _showCartConfirmation(productName, quantity, price);
                         }
@@ -712,6 +741,7 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
                                         _cart.remove(productId);
                                         _cartItemCount = _cart.values.fold(0, (a, b) => a + (b['quantity'] as int));
                                       });
+                                      _saveCartToStorage();
                                       Navigator.pop(context);
                                       if (_cart.isNotEmpty) {
                                         _showCartSummary();
