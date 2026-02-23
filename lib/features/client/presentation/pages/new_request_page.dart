@@ -9,6 +9,7 @@ import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_card.dart';
 import '../../../../core/widgets/gradient_button.dart';
 import '../../../../core/widgets/modern_glass_card.dart';
+import '../../../../core/widgets/liquid_glass_modal.dart';
 import '../../../../core/validators/input_validators.dart';
 import '../../../../core/utils/error_handler.dart';
 import '../../../../core/services/geolocation_service.dart';
@@ -143,32 +144,18 @@ class _NewRequestPageState extends State<NewRequestPage> {
   void _showLocationPermissionDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1e293b),
-        title: const Text(
-          'Permisos de ubicación',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Esta app necesita acceso a tu ubicación para poder crear solicitudes de servicio y rastrear entregas. Por favor, habilita los permisos de ubicación.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await _geolocationService.openAppSettings();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF06b6d4),
-            ),
-            child: const Text('Abrir configuración'),
-          ),
-        ],
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (ctx) => LiquidGlassModal(
+        type: LiquidGlassModalType.info,
+        title: 'Permisos de ubicación',
+        message:
+            'Esta app necesita acceso a tu ubicación para poder crear solicitudes de servicio y rastrear entregas. Por favor, habilita los permisos de ubicación.',
+        confirmLabel: 'Abrir configuración',
+        cancelLabel: 'Cancelar',
+        onConfirm: () => _geolocationService.openAppSettings(),
+        onCancel: () => Navigator.of(ctx).pop(),
+        barrierDismissible: true,
       ),
     );
   }
@@ -663,7 +650,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('¡Solicitud creada exitosamente!'), backgroundColor: Color(0xFF10b981)),
         );
-        context.go('/requests');
+        context.go('/dashboard/cliente', extra: {'tab': 1});
       }
     } catch (e) {
       final errorMessage = ErrorHandler.getErrorMessage(e);
@@ -686,7 +673,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
               AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => _currentStep > 1 ? _prevStep() : context.go('/requests'),
+                  onPressed: () => _currentStep > 1 ? _prevStep() : context.go('/dashboard/cliente', extra: {'tab': 1}),
                 ),
                 title: const Text('Nueva Solicitud', style: TextStyle(color: Colors.white, fontSize: 18)),
                 backgroundColor: Colors.transparent,
@@ -812,7 +799,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
               children: [
                 TextButton(onPressed: _loadCategories, child: const Text('Reintentar')),
                 const SizedBox(width: 8),
-                TextButton(onPressed: () => context.go('/requests'), child: const Text('Volver')),
+                TextButton(onPressed: () => context.go('/dashboard/cliente', extra: {'tab': 1}), child: const Text('Volver')),
               ],
             ),
           ],
@@ -896,7 +883,7 @@ class _NewRequestPageState extends State<NewRequestPage> {
         Row(
           children: [
             OutlinedButton.icon(
-              onPressed: () => context.go('/requests'),
+              onPressed: () => context.go('/dashboard/cliente', extra: {'tab': 1}),
               icon: const Icon(Icons.arrow_back, size: 18),
               label: const Text('Cancelar'),
               style: OutlinedButton.styleFrom(

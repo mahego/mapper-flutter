@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import '../constants/app_constants.dart';
+import '../services/storage_service.dart';
 
 // Custom exception for unauthorized errors
 class UnauthorizedException implements Exception {
@@ -16,6 +16,9 @@ class ApiClient {
   final Dio _dio;
   final Logger _logger;
 
+  /// Callback when 401 is received (e.g. redirect to login). Set from main.
+  static void Function()? onUnauthorized;
+
   ApiClient({Dio? dio, Logger? logger}) 
       : _dio = dio ?? Dio(BaseOptions(
           baseUrl: AppConstants.baseUrl,
@@ -27,16 +30,13 @@ class ApiClient {
     
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Add Auth Token if available
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('auth_token');
+        final token = await StorageService().getTokenAsync();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
           _logger.d('🔐 Token añadido: ${token.substring(0, 20)}...');
         } else {
           _logger.w('⚠️ No hay token de autenticación disponible');
         }
-        
         _logger.d('REQUEST[${options.method}] => PATH: ${options.path}');
         return handler.next(options);
       },
@@ -44,14 +44,15 @@ class ApiClient {
         _logger.d('RESPONSE[${response.statusCode}] => PATH: ${response.requestOptions.path}');
         return handler.next(response);
       },
-      onError: (DioException e, handler) {
+      onError: (DioException e, handler) async {
         final statusCode = e.response?.statusCode;
         final path = e.requestOptions.path;
         
-        // Handle 401 Unauthorized
         if (statusCode == 401) {
           _logger.w('⚠️ UNAUTHORIZED[401] => PATH: $path (auth required)');
-          final message = 'Unauthorized: ${e.message}';
+          await StorageService().removeToken();
+          onUnauthorized?.call();
+          final message = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
           return handler.reject(DioException(
             requestOptions: e.requestOptions,
             response: e.response,
@@ -59,10 +60,31 @@ class ApiClient {
             error: UnauthorizedException(message),
             message: message,
           ));
-        } else {
-          _logger.e('⛔ ERROR[$statusCode] => PATH: $path', error: e.error, stackTrace: e.stackTrace);
         }
-        
+        _logger.e('⛔ ERROR[$statusCode] => PATH: $path', error: e.error, stackTrace: e.stackTrace);
+        return handler.next(e);
+      },
+    ));
+
+    // Retry GET on connection/timeout errors (idempotentes)
+    _dio.interceptors.add(InterceptorsWrapper(
+      onError: (e, handler) async {
+        final isGet = e.requestOptions.method == 'GET';
+        final retryCount = (e.requestOptions.extra['retry_count'] as int?) ?? 0;
+        const maxRetries = 2;
+        final isRetryable = e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError;
+        if (isGet && isRetryable && retryCount < maxRetries) {
+          e.requestOptions.extra['retry_count'] = retryCount + 1;
+          await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+          try {
+            final response = await _dio.fetch(e.requestOptions);
+            return handler.resolve(response);
+          } catch (_) {
+            return handler.next(e);
+          }
+        }
         return handler.next(e);
       },
     ));

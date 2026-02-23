@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/store_bottom_nav.dart';
+import '../../../../core/widgets/liquid_glass_modal.dart';
+import '../../../../core/widgets/liquid_glass_snackbar.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/barcode_scanner_service.dart';
 import '../../../../core/services/firebase_storage_service.dart';
@@ -47,9 +49,7 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        LiquidGlassSnackBar.showError(context, 'Error: $e');
       }
     }
   }
@@ -279,15 +279,14 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
 
         _loadProducts();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(product == null ? 'Producto creado' : 'Producto actualizado')),
+          LiquidGlassSnackBar.showSuccess(
+            context,
+            product == null ? 'Producto creado' : 'Producto actualizado',
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          LiquidGlassSnackBar.showError(context, 'Error: $e');
         }
       }
     }
@@ -303,42 +302,24 @@ class _StoreCatalogPageState extends State<StoreCatalogPage> {
   }
 
   Future<void> _deleteProduct(StoreProduct product) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Eliminar "${product.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final confirm = await LiquidGlassModalShow.confirm(
+      context,
+      title: 'Confirmar eliminación',
+      message: '¿Eliminar "${product.name}"?',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
     );
 
     if (confirm == true) {
       try {
         await _productRepository.deleteProduct(product.id);
         _loadProducts();
-        
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Producto eliminado')),
-          );
+          LiquidGlassSnackBar.showSuccess(context, 'Producto eliminado');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          LiquidGlassSnackBar.showError(context, 'Error: $e');
         }
       }
     }

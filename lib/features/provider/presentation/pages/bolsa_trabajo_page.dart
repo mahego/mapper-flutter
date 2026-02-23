@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/provider_bottom_nav.dart';
+import '../../../../core/utils/bottom_nav_index.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/repositories/shift_repository.dart';
 import '../../domain/entities/shift.dart';
@@ -109,7 +110,7 @@ class _BolsaTrabajoPageState extends State<BolsaTrabajoPage>
   @override
   Widget build(BuildContext context) {
     return TropicalScaffold(
-      bottomNavigationBar: const ProviderBottomNav(currentIndex: 2),
+      bottomNavigationBar: ProviderBottomNav(currentIndex: BottomNavIndex.provider(context)),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [

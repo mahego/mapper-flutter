@@ -34,7 +34,7 @@ class NavigationService {
   }
 
   void goToClientRequests(BuildContext context) {
-    context.go('/requests');
+    context.go('/dashboard/cliente', extra: {'tab': 1});
   }
 
   void goToNewRequest(BuildContext context) {

@@ -24,6 +24,8 @@ class _RequestsPageState extends State<RequestsPage> {
 
   String _filterType = 'all';
   String _filterStatus = 'all';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   static const _typeFilters = [
     ('all', 'Todos', AppIcons.listAlt),
@@ -56,6 +58,8 @@ class _RequestsPageState extends State<RequestsPage> {
       final list = await _requestRepository.getUnifiedRequests(
         type: _filterType,
         status: _filterStatus,
+        dateFrom: _dateFrom,
+        dateTo: _dateTo,
       );
       if (mounted) {
         setState(() {
@@ -82,6 +86,43 @@ class _RequestsPageState extends State<RequestsPage> {
 
   void _setStatus(String status) {
     setState(() => _filterStatus = status);
+    _loadRequests();
+  }
+
+  Future<void> _pickDateFrom() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _dateFrom ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (d != null) {
+      setState(() {
+        _dateFrom = d;
+        if (_dateTo != null && _dateTo!.isBefore(d)) _dateTo = null;
+      });
+      _loadRequests();
+    }
+  }
+
+  Future<void> _pickDateTo() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _dateTo ?? _dateFrom ?? DateTime.now(),
+      firstDate: _dateFrom ?? DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (d != null) {
+      setState(() => _dateTo = d);
+      _loadRequests();
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _dateFrom = null;
+      _dateTo = null;
+    });
     _loadRequests();
   }
 
@@ -218,6 +259,34 @@ class _RequestsPageState extends State<RequestsPage> {
                 labelStyle: TextStyle(color: selected ? Colors.black87 : Colors.white.withOpacity(0.9)),
               );
             }).toList(),
+          ),
+          const SizedBox(height: 12),
+          Text('Rango de fechas', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.7))),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: _pickDateFrom,
+                icon: const Icon(Icons.calendar_today, size: 16),
+                label: Text(_dateFrom != null ? '${_dateFrom!.day}/${_dateFrom!.month}/${_dateFrom!.year}' : 'Desde', style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _pickDateTo,
+                icon: const Icon(Icons.calendar_today, size: 16),
+                label: Text(_dateTo != null ? '${_dateTo!.day}/${_dateTo!.month}/${_dateTo!.year}' : 'Hasta', style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: BorderSide(color: Colors.white.withOpacity(0.3)), padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+              ),
+              if (_dateFrom != null || _dateTo != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _clearDateFilter,
+                  icon: const Icon(Icons.clear, size: 20, color: Colors.white70),
+                  tooltip: 'Quitar filtro de fechas',
+                ),
+              ],
+            ],
           ),
         ],
       ),

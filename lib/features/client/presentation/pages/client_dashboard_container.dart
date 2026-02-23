@@ -6,9 +6,13 @@ import 'client_tracking_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
 
 /// Client Dashboard Container
-/// Uses IndexedStack to maintain state of all pages
+/// Uses IndexedStack to maintain state of all pages.
+/// [initialTabIndex] permite abrir una pestaña concreta al volver (ej. desde detalle de solicitud).
 class ClientDashboardContainer extends StatefulWidget {
-  const ClientDashboardContainer({super.key});
+  /// 0=Inicio, 1=Solicitudes, 2=Tracking, 3=Perfil. Null = mantener índice actual o 0.
+  final int? initialTabIndex;
+
+  const ClientDashboardContainer({super.key, this.initialTabIndex});
 
   @override
   State<ClientDashboardContainer> createState() => _ClientDashboardContainerState();
@@ -16,6 +20,25 @@ class ClientDashboardContainer extends StatefulWidget {
 
 class _ClientDashboardContainerState extends State<ClientDashboardContainer> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTabIndex != null && widget.initialTabIndex! >= 0 && widget.initialTabIndex! < 4) {
+      _selectedIndex = widget.initialTabIndex!;
+    }
+  }
+
+  @override
+  void didUpdateWidget(ClientDashboardContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != null && widget.initialTabIndex != oldWidget.initialTabIndex) {
+      final tab = widget.initialTabIndex!;
+      if (tab >= 0 && tab < 4 && tab != _selectedIndex) {
+        setState(() => _selectedIndex = tab);
+      }
+    }
+  }
 
   // Pages to display based on index
   late final List<Widget> _pages = [

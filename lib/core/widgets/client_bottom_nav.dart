@@ -25,7 +25,7 @@ class ClientBottomNav extends StatelessWidget {
             context.go('/client/dashboard');
             break;
           case 1:
-            context.go('/requests');
+            context.go('/dashboard/cliente', extra: {'tab': 1});
             break;
           case 2:
             context.go('/cliente/tracking');

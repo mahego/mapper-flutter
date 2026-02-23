@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import '../../core/pages/not_found_page.dart';
+import '../../core/pages/static_legal_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/orders/presentation/pages/orders_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -46,7 +48,11 @@ class AppRouter {
       GoRoute(
         path: '/dashboard/cliente',
         name: 'dashboard_cliente',
-        builder: (context, state) => const ClientDashboardContainer(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final tab = extra?['tab'] as int?;
+          return ClientDashboardContainer(initialTabIndex: tab);
+        },
       ),
       GoRoute(
         path: '/requests',
@@ -140,6 +146,47 @@ class AppRouter {
         name: 'profile_angular',
         builder: (context, state) => const ProfilePage(),
       ),
+      // === Legales / estáticas (paridad Angular) ===
+      GoRoute(
+        path: '/aviso-de-privacidad',
+        name: 'aviso_privacidad',
+        builder: (context, state) => const StaticLegalPage(
+          title: 'Aviso de Privacidad',
+          content: _legalAvisoPrivacidad,
+        ),
+      ),
+      GoRoute(
+        path: '/terminos-y-condiciones',
+        name: 'terminos_condiciones',
+        builder: (context, state) => const StaticLegalPage(
+          title: 'Términos y Condiciones',
+          content: _legalTerminos,
+        ),
+      ),
+      GoRoute(
+        path: '/politica-cookies',
+        name: 'politica_cookies',
+        builder: (context, state) => const StaticLegalPage(
+          title: 'Política de Cookies',
+          content: _legalCookies,
+        ),
+      ),
+      GoRoute(
+        path: '/acerca-de',
+        name: 'acerca_de',
+        builder: (context, state) => const StaticLegalPage(
+          title: 'Acerca de',
+          content: _legalAcercaDe,
+        ),
+      ),
+      GoRoute(
+        path: '/contacto',
+        name: 'contacto',
+        builder: (context, state) => const StaticLegalPage(
+          title: 'Contacto',
+          content: _legalContacto,
+        ),
+      ),
       // === Auth (legacy) ===
       GoRoute(
         path: '/auth/login',
@@ -228,10 +275,30 @@ class AppRouter {
         builder: (context, state) => const VehiclesPage(),
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.uri}'),
-      ),
-    ),
+    errorBuilder: (context, state) => NotFoundPage(path: state.uri.path),
   );
 }
+
+const String _legalAvisoPrivacidad = '''
+En cumplimiento con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, Mapper.digital informa que los datos personales que nos proporcione serán utilizados para la prestación de servicios de entrega y logística, gestión de pedidos, atención al cliente y comunicación relacionada con su cuenta.
+
+Usted puede ejercer sus derechos de acceso, rectificación, cancelación u oposición contactando a nuestro responsable de datos. Para más información consulte nuestra política completa en la web.
+''';
+
+const String _legalTerminos = '''
+Al utilizar la plataforma Mapper.digital usted acepta estos términos y condiciones. El servicio permite solicitar servicios de entrega y realizar pedidos a tiendas asociadas. Es responsabilidad del usuario proporcionar información veraz y mantener la confidencialidad de su cuenta.
+
+Mapper.digital se reserva el derecho de modificar estos términos. El uso continuado del servicio tras cambios constituye aceptación de los nuevos términos.
+''';
+
+const String _legalCookies = '''
+Esta plataforma utiliza cookies y tecnologías similares para mejorar la experiencia del usuario, analizar el uso del servicio y personalizar contenido. Puede configurar su navegador para rechazar cookies, teniendo en cuenta que algunas funciones podrían no estar disponibles.
+''';
+
+const String _legalAcercaDe = '''
+Mapper.digital es una plataforma de servicios de entrega y pedidos que conecta a clientes con prestadores y tiendas. Nuestra misión es facilitar la logística y el comercio local con tecnología sencilla y confiable.
+''';
+
+const String _legalContacto = '''
+Para soporte, sugerencias o reportar incidencias puede contactarnos por:\n\n• Email: soporte@mapper.digital\n• Desde la app: sección Ayuda en Mi Perfil
+''';

@@ -5,6 +5,8 @@ import '../../../../core/network/api_endpoints.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/liquid_glass_card.dart';
 import '../../../../core/widgets/gradient_button.dart';
+import '../../../../core/widgets/liquid_glass_modal.dart';
+import '../../../../core/widgets/liquid_glass_snackbar.dart';
 import '../../domain/entities/service_request.dart';
 import '../../domain/repositories/request_repository.dart';
 
@@ -89,31 +91,23 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         data: {'counterofferId': offerId},
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contraoferta aceptada exitosamente')),
-        );
+        LiquidGlassSnackBar.showSuccess(context, 'Contraoferta aceptada exitosamente');
         _loadDetail();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al aceptar: $e')),
-        );
+        LiquidGlassSnackBar.showError(context, 'Error al aceptar: $e');
       }
     }
   }
 
   Future<void> _cancelRequest() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancelar solicitud'),
-        content: const Text('¿Estás seguro de que deseas cancelar esta solicitud?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sí, cancelar')),
-        ],
-      ),
+    final confirm = await LiquidGlassModalShow.confirm(
+      context,
+      title: 'Cancelar solicitud',
+      message: '¿Estás seguro de que deseas cancelar esta solicitud?',
+      confirmLabel: 'Sí, cancelar',
+      cancelLabel: 'No',
     );
     if (confirm != true) return;
     try {
@@ -122,12 +116,12 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
         data: {'reason': 'Cancelada por el usuario'},
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Solicitud cancelada')));
+        LiquidGlassSnackBar.showSuccess(context, 'Solicitud cancelada');
         _loadDetail();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        LiquidGlassSnackBar.showError(context, 'Error: $e');
       }
     }
   }
@@ -142,7 +136,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
               AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.go('/requests'),
+                  onPressed: () => context.go('/dashboard/cliente', extra: {'tab': 1}),
                 ),
                 title: const Text('Detalle de solicitud', style: TextStyle(color: Colors.white)),
                 backgroundColor: Colors.transparent,

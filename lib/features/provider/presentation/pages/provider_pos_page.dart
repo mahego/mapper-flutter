@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/tropical_scaffold.dart';
 import '../../../../core/widgets/provider_bottom_nav.dart';
+import '../../../../core/utils/bottom_nav_index.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class ProviderPosPage extends StatelessWidget {
@@ -9,7 +10,7 @@ class ProviderPosPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TropicalScaffold(
-      bottomNavigationBar: const ProviderBottomNav(currentIndex: 1),
+      bottomNavigationBar: ProviderBottomNav(currentIndex: BottomNavIndex.provider(context)),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(

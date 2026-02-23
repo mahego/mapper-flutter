@@ -27,6 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isGoogleLoading = false;
   bool _isFacebookLoading = false;
   bool _obscurePassword = true;
+  bool _shownExpiredMessage = false;
 
   @override
   void dispose() {
@@ -199,6 +200,20 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final state = GoRouterState.of(context);
+    if (state.uri.queryParameters['expired'] == '1' && !_shownExpiredMessage) {
+      _shownExpiredMessage = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Tu sesión ha expirado. Inicia sesión nuevamente.'),
+              backgroundColor: Colors.orange.shade800,
+            ),
+          );
+        }
+      });
+    }
     return Scaffold(
       body: LiquidGlassBackground(
         child: SafeArea(

@@ -123,7 +123,7 @@ class OrderConfirmationPage extends StatelessWidget {
                             ElevatedButton(
                               onPressed: () {
                                 // Navigate to orders/requests page
-                                context.go('/client/requests');
+                                context.go('/dashboard/cliente', extra: {'tab': 1});
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF06b6d4),

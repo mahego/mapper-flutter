@@ -353,7 +353,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
                         label: 'Mis solicitudes',
                         onTap: () {
                           setState(() => _drawerOpen = false);
-                          context.push('/requests');
+                          context.go('/dashboard/cliente', extra: {'tab': 1});
                         },
                       ),
                       _drawerLink(
@@ -486,7 +486,7 @@ class _ClientDashboardPageState extends State<ClientDashboardPage> {
             _ActionCard(
               icon: AppIcons.assignment,
               label: 'Mis solicitudes',
-              onTap: () => context.push('/requests'),
+              onTap: () => context.go('/dashboard/cliente', extra: {'tab': 1}),
             ),
             _ActionCard(
               icon: AppIcons.map,

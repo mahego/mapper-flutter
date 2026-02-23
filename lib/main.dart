@@ -48,7 +48,10 @@ void main() async {
   
   // Initialize Auth Service
   AuthService().initialize(authRepository, apiClient);
-  
+
+  // 401: redirigir a login y mostrar "Tu sesión ha expirado"
+  ApiClient.onUnauthorized = () => AppRouter.router.go('/login?expired=1');
+
   runApp(const MapperApp());
 }
 

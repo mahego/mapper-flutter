@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_config.dart';
 
@@ -7,9 +8,12 @@ class StorageService {
   StorageService._internal();
 
   SharedPreferences? _prefs;
+  static const _secureStorage = FlutterSecureStorage();
+  String? _cachedToken;
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
+    _cachedToken = await _secureStorage.read(key: AppConfig.tokenKey);
   }
 
   SharedPreferences get prefs {
@@ -19,30 +23,46 @@ class StorageService {
     return _prefs!;
   }
 
-  // Token Management
+  // Token Management (secure storage – paridad PENDIENTES)
   Future<bool> saveToken(String token) async {
-    return await prefs.setString(AppConfig.tokenKey, token);
+    await _secureStorage.write(key: AppConfig.tokenKey, value: token);
+    _cachedToken = token;
+    return true;
   }
 
   String? getToken() {
-    return prefs.getString(AppConfig.tokenKey);
+    return _cachedToken;
+  }
+
+  Future<String?> getTokenAsync() async {
+    if (_cachedToken != null) return _cachedToken;
+    _cachedToken = await _secureStorage.read(key: AppConfig.tokenKey);
+    return _cachedToken;
   }
 
   Future<bool> removeToken() async {
-    return await prefs.remove(AppConfig.tokenKey);
+    await _secureStorage.delete(key: AppConfig.tokenKey);
+    _cachedToken = null;
+    return true;
   }
 
   // Refresh Token
   Future<bool> saveRefreshToken(String token) async {
-    return await prefs.setString(AppConfig.refreshTokenKey, token);
+    await _secureStorage.write(key: AppConfig.refreshTokenKey, value: token);
+    return true;
+  }
+
+  Future<String?> getRefreshTokenAsync() async {
+    return await _secureStorage.read(key: AppConfig.refreshTokenKey);
   }
 
   String? getRefreshToken() {
-    return prefs.getString(AppConfig.refreshTokenKey);
+    return null;
   }
 
   Future<bool> removeRefreshToken() async {
-    return await prefs.remove(AppConfig.refreshTokenKey);
+    await _secureStorage.delete(key: AppConfig.refreshTokenKey);
+    return true;
   }
 
   // User Data
@@ -72,6 +92,9 @@ class StorageService {
 
   // Clear All Data
   Future<bool> clearAll() async {
+    _cachedToken = null;
+    await _secureStorage.delete(key: AppConfig.tokenKey);
+    await _secureStorage.delete(key: AppConfig.refreshTokenKey);
     return await prefs.clear();
   }
 

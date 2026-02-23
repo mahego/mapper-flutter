@@ -517,12 +517,15 @@ class RequestRepository {
     }
   }
 
-  /// Lista unificada: solicitudes de servicio + pedidos de tienda (paridad Angular request-list)
+  /// Lista unificada: solicitudes de servicio + pedidos de tienda (paridad Angular request-list).
+  /// [dateFrom] / [dateTo]: filtro por rango de fechas (applied client-side por createdAt).
   Future<List<UnifiedRequestItem>> getUnifiedRequests({
     String type = 'all',
     String status = 'all',
     int page = 1,
     int limit = 20,
+    DateTime? dateFrom,
+    DateTime? dateTo,
   }) async {
     print('🔍 getUnifiedRequests - type: $type, status: $status');
     final List<UnifiedRequestItem> result = [];
@@ -579,8 +582,22 @@ class RequestRepository {
       } catch (_) {}
     }
     result.sort((a, b) => (b.createdAt).compareTo(a.createdAt));
-    print('🔍 Total unified requests: ${result.length}');
-    return result;
+    // Filtro por rango de fechas (client-side)
+    List<UnifiedRequestItem> filtered = result;
+    if (dateFrom != null || dateTo != null) {
+      filtered = result.where((item) {
+        final d = DateTime.tryParse(item.createdAt);
+        if (d == null) return true;
+        if (dateFrom != null && d.isBefore(DateTime(dateFrom.year, dateFrom.month, dateFrom.day))) return false;
+        if (dateTo != null) {
+          final end = DateTime(dateTo.year, dateTo.month, dateTo.day, 23, 59, 59);
+          if (d.isAfter(end)) return false;
+        }
+        return true;
+      }).toList();
+    }
+    print('🔍 Total unified requests: ${filtered.length}');
+    return filtered;
   }
 
   /// Pedidos del cliente para "Volver a pedir" (GET /store-orders) – paridad Angular

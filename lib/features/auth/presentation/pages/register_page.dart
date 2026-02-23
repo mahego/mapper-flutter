@@ -32,6 +32,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'cliente';
+  int _currentStep = 1; // Wizard 3 pasos: 1=rol, 2=método, 3=formulario
+  bool _registerWithEmail = true; // step 2: true = email, false = social
 
   @override
   void dispose() {
@@ -228,7 +230,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                        if (_currentStep > 1) {
+                          setState(() => _currentStep--);
+                        } else {
+                          context.pop();
+                        }
+                      },
                     ),
                     const Text(
                       'Crear Cuenta',
@@ -265,50 +273,184 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Únete a Mapper',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Completa tus datos para comenzar',
+                            _currentStep == 1
+                                ? 'Paso 1 de 3'
+                                : _currentStep == 2
+                                    ? 'Paso 2 de 3'
+                                    : 'Paso 3 de 3',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.white.withOpacity(0.7),
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 4),
+                          Text(
+                            _currentStep == 1
+                                ? 'Elige tu tipo de cuenta'
+                                : _currentStep == 2
+                                    ? '¿Cómo quieres registrarte?'
+                                    : 'Completa tus datos',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
 
-                          // Glass Card with Form
-                          LiquidGlassCard(
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Name Field
-                                  LiquidGlassTextField(
-                                    controller: _nameController,
-                                    labelText: 'Nombre completo',
-                                    hintText: 'Tu nombre',
-                                    prefixIcon: const Icon(
-                                      Icons.person_outline,
-                                      color: Colors.white70,
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Ingresa tu nombre';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
+                          if (_currentStep == 1) _buildStep1Role(),
+                          if (_currentStep == 2) _buildStep2Method(),
+                          if (_currentStep == 3) _buildStep3Form(context),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                                  // Email Field
-                                  LiquidGlassTextField(
+  Widget _buildStep1Role() {
+    return LiquidGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _roleOption('cliente', 'Cliente', 'Solicito servicios y pedidos', Icons.person),
+          const SizedBox(height: 12),
+          _roleOption('prestador', 'Prestador', 'Ofrezco servicios de entrega', Icons.local_shipping),
+          const SizedBox(height: 12),
+          _roleOption('tienda', 'Tienda', 'Vendo productos y recibo pedidos', Icons.store),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () => setState(() => _currentStep = 2),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF06b6d4),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Siguiente'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _roleOption(String value, String label, String subtitle, IconData icon) {
+    final selected = _selectedRole == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => setState(() => _selectedRole = value),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF06b6d4).withOpacity(0.25) : Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? const Color(0xFF06b6d4) : Colors.white24,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? const Color(0xFF06b6d4) : Colors.white70, size: 28),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                    Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (selected) const Icon(Icons.check_circle, color: Color(0xFF06b6d4)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStep2Method() {
+    return LiquidGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => setState(() => _currentStep = 3),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.email_outlined, color: Colors.white70, size: 28),
+                    const SizedBox(width: 14),
+                    const Expanded(child: Text('Registrarme con mi email', style: TextStyle(color: Colors.white, fontSize: 16))),
+                    const Icon(Icons.chevron_right, color: Colors.white54),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 16),
+          SocialLoginButton(
+            provider: 'Google',
+            onPressed: _handleGoogleRegister,
+            isLoading: _isGoogleLoading,
+          ),
+          const SizedBox(height: 12),
+          SocialLoginButton(
+            provider: 'Facebook',
+            onPressed: _handleFacebookRegister,
+            isLoading: _isFacebookLoading,
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => setState(() => _currentStep = 1),
+            child: Text('Cambiar tipo de cuenta', style: TextStyle(color: Colors.white.withOpacity(0.8))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3Form(BuildContext context) {
+    return LiquidGlassCard(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LiquidGlassTextField(
+              controller: _nameController,
+              labelText: 'Nombre completo',
+              hintText: 'Tu nombre',
+              prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Ingresa tu nombre';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            LiquidGlassTextField(
                                     controller: _emailController,
                                     labelText: 'Email',
                                     hintText: 'tu@email.com',
@@ -342,38 +484,26 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   const SizedBox(height: 16),
 
-                                  // Role Selector
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.25),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: _selectedRole,
-                                        isExpanded: true,
-                                        dropdownColor: const Color(0xFF1a1a2e),
-                                        style: const TextStyle(color: Colors.white),
-                                        icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                                        items: const [
-                                          DropdownMenuItem(value: 'cliente', child: Text('Cliente')),
-                                          DropdownMenuItem(value: 'prestador', child: Text('Prestador de Servicios')),
-                                          DropdownMenuItem(value: 'tienda', child: Text('Tienda / Comercio')),
-                                        ],
-                                        onChanged: (value) {
-                                          if (value != null) {
-                                            setState(() => _selectedRole = value);
-                                          }
-                                        },
-                                      ),
+                                  // Rol elegido en paso 1
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.badge_outlined, color: Colors.white.withOpacity(0.7), size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Registrarte como: ${_selectedRole == 'cliente' ? 'Cliente' : _selectedRole == 'prestador' ? 'Prestador' : 'Tienda'}',
+                                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                                        ),
+                                        const Spacer(),
+                                        TextButton(
+                                          onPressed: () => setState(() => _currentStep = 1),
+                                          child: Text('Cambiar', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 8),
 
                                   // Password Field
                                   LiquidGlassTextField(
@@ -439,72 +569,44 @@ class _RegisterPageState extends State<RegisterPage> {
                                       return null;
                                     },
                                   ),
-                                  const SizedBox(height: 32),
-
-                                  // Register Button
+                                  const SizedBox(height: 24),
                                   GradientButton(
                                     onPressed: _handleRegister,
                                     text: 'Crear Cuenta',
                                     isLoading: _isLoading,
                                   ),
-                                  
-                                  // Social Login Divider
-                                  const SocialLoginDivider(),
-                                  
-                                  // Google Button
-                                  SocialLoginButton(
-                                    provider: 'Google',
-                                    onPressed: _handleGoogleRegister,
-                                    isLoading: _isGoogleLoading,
-                                  ),
                                   const SizedBox(height: 12),
-                                  
-                                  // Facebook Button
-                                  SocialLoginButton(
-                                    provider: 'Facebook',
-                                    onPressed: _handleFacebookRegister,
-                                    isLoading: _isFacebookLoading,
+                                  TextButton(
+                                    onPressed: () => setState(() => _currentStep = 2),
+                                    child: Text('Regresar', style: TextStyle(color: Colors.white.withOpacity(0.8))),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '¿Ya tienes cuenta? ',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => context.pop(),
+                                        child: Text(
+                                          'Inicia Sesión',
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.95),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Login Link
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '¿Ya tienes cuenta? ',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => context.pop(),
-                                child: Text(
-                                  'Inicia Sesión',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.95),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
