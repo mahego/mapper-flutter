@@ -64,6 +64,10 @@ class ApiEndpoints {
   static String storeForPOS(String storeId) => '/stores/$storeId';
   static const String posSale = '/store-orders';
 
+  // POS Pago con QR (sesión; cliente paga en app)
+  static String posPaymentSession(String sessionId) => '/pos-payment-sessions/$sessionId';
+  static String posPaymentConfirm(String sessionId) => '/pos-payment-sessions/$sessionId/confirm';
+
   // Pricing
   static const String estimatePrice = '/pricing/estimate';
   

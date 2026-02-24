@@ -25,6 +25,7 @@ import '../../features/client/presentation/pages/client_catalog_page.dart';
 import '../../features/client/presentation/pages/client_checkout_page.dart';
 import '../../features/client/presentation/pages/order_confirmation_page.dart';
 import '../../features/client/presentation/pages/store_order_detail_page.dart';
+import '../../features/client/presentation/pages/pos_pay_page.dart';
 import '../../features/store/presentation/pages/store_pos_page.dart';
 import '../../features/store/presentation/pages/store_catalog_page.dart';
 import '../../features/store/presentation/pages/store_orders_page.dart';
@@ -149,6 +150,83 @@ class AppRouter {
         path: '/profile',
         name: 'profile_angular',
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: '/pay',
+        name: 'pos_pay',
+        builder: (context, state) {
+          final sessionId = state.uri.queryParameters['session'] ?? state.pathParameters['sessionId'] ?? '';
+          if (sessionId.isEmpty) {
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Enlace de pago inválido', style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => context.go('/'),
+                      child: const Text('Volver'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          return PosPayPage(sessionId: sessionId);
+        },
+        routes: [
+          GoRoute(
+            path: 'success',
+            name: 'pos_pay_success',
+            builder: (context, state) {
+              return Scaffold(
+                body: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle, size: 80, color: Colors.green.shade300),
+                        const SizedBox(height: 24),
+                        Text('Pago exitoso', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white)),
+                        const SizedBox(height: 8),
+                        const Text('La tienda recibió tu pago.', style: TextStyle(color: Colors.white70)),
+                        const SizedBox(height: 32),
+                        FilledButton(onPressed: () => context.go('/dashboard/cliente'), child: const Text('Ir al inicio')),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'failure',
+            name: 'pos_pay_failure',
+            builder: (context, state) {
+              return Scaffold(
+                body: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cancel, size: 80, color: Colors.red.shade300),
+                        const SizedBox(height: 24),
+                        Text('Pago no realizado', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white)),
+                        const SizedBox(height: 8),
+                        const Text('Puedes intentar de nuevo escaneando el QR en la tienda.', style: TextStyle(color: Colors.white70)),
+                        const SizedBox(height: 32),
+                        FilledButton(onPressed: () => context.go('/dashboard/cliente'), child: const Text('Ir al inicio')),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       // === Legales / estáticas (paridad Angular) ===
       GoRoute(

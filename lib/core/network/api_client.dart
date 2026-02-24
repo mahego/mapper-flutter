@@ -3,6 +3,9 @@ import 'package:logger/logger.dart';
 import '../constants/app_constants.dart';
 import '../services/storage_service.dart';
 
+/// Opción para no enviar Authorization (ej. GET sesión de pago QR es público).
+const _skipAuth = Options(extra: {'skip_auth': true});
+
 // Custom exception for unauthorized errors
 class UnauthorizedException implements Exception {
   final String message;
@@ -145,8 +148,8 @@ class ApiClient {
 
   Dio get client => _dio;
 
-  Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    return _dio.get(path, queryParameters: queryParameters);
+  Future<Response> get(String path, {Map<String, dynamic>? queryParameters, bool skipAuth = false}) async {
+    return _dio.get(path, queryParameters: queryParameters, options: skipAuth ? _skipAuth : null);
   }
 
   Future<Response> post(String path, {dynamic data, Map<String, dynamic>? queryParameters}) async {
