@@ -1033,11 +1033,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         setState(() => _drawerOpen = false);
                       }),
                       _drawerLink('Mis Solicitudes', AppIcons.assignment, () {
-                        context.go('/solicitudes');
+                        context.go('/dashboard/cliente', extra: {'tab': 1});
                         setState(() => _drawerOpen = false);
                       }),
                       _drawerLink('Tracking', AppIcons.locationOn, () {
-                        context.go('/tracking');
+                        context.go('/dashboard/cliente', extra: {'tab': 2});
                         setState(() => _drawerOpen = false);
                       }),
                       _drawerLink('Refrescar', AppIcons.refresh, () {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
@@ -13,7 +14,14 @@ import 'features/auth/data/repositories/auth_repository_impl.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Locale para DateFormat con 'es' (evita LocaleDataException)
+  try {
+    await initializeDateFormatting('es', null);
+  } catch (e) {
+    debugPrint('⚠️ initializeDateFormatting(es): $e');
+  }
+
   // Load environment variables from .env file
   try {
     await dotenv.load();
@@ -49,8 +57,9 @@ void main() async {
   // Initialize Auth Service
   AuthService().initialize(authRepository, apiClient);
 
-  // 401: redirigir a login y mostrar "Tu sesión ha expirado"
-  ApiClient.onUnauthorized = () => AppRouter.router.go('/login?expired=1');
+  // 401: intentar refresh token; si falla, redirigir a login
+  ApiClient.onUnauthorized = () => AppRouter.router.go('/auth/login?expired=1');
+  ApiClient.onTryRefreshToken = () => AuthService().tryRefreshAccessToken();
 
   runApp(const MapperApp());
 }

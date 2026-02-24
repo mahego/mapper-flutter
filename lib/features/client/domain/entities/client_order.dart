@@ -33,33 +33,48 @@ class ClientOrder {
     this.completedAt,
   });
 
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
   factory ClientOrder.fromJson(Map<String, dynamic> json) {
     final itemsList = json['items'] as List<dynamic>? ?? [];
     return ClientOrder(
-      id: json['id'] ?? 0,
-      storeId: json['storeId'] ?? json['store_id'] ?? 0,
-      storeName: json['storeName'] ?? json['store_name'],
-      clientId: json['clientId'] ?? json['client_id'],
-      total: (json['total'] ?? 0).toDouble(),
-      deliveryFee: json['deliveryFee'] != null || json['delivery_fee'] != null
-          ? (json['deliveryFee'] ?? json['delivery_fee']).toDouble()
+      id: _toInt(json['id']),
+      storeId: _toInt(json['storeId'] ?? json['store_id']),
+      storeName: json['storeName']?.toString() ?? json['store_name']?.toString(),
+      clientId: json['clientId'] != null || json['client_id'] != null
+          ? _toInt(json['clientId'] ?? json['client_id'])
           : null,
-      status: json['status'] ?? 'pending',
-      paymentMethod: json['paymentMethod'] ?? json['payment_method'],
+      total: _toDouble(json['total']),
+      deliveryFee: json['deliveryFee'] != null || json['delivery_fee'] != null
+          ? _toDouble(json['deliveryFee'] ?? json['delivery_fee'])
+          : null,
+      status: json['status']?.toString() ?? 'pending',
+      paymentMethod: json['paymentMethod']?.toString() ?? json['payment_method']?.toString(),
       items: itemsList.map((item) => ClientOrderItem.fromJson(item)).toList(),
-      deliveryAddress: json['deliveryAddress'] ?? json['delivery_address'],
+      deliveryAddress: json['deliveryAddress']?.toString() ?? json['delivery_address']?.toString(),
       deliveryLat: json['deliveryLat'] != null || json['delivery_lat'] != null
-          ? (json['deliveryLat'] ?? json['delivery_lat']).toDouble()
+          ? _toDouble(json['deliveryLat'] ?? json['delivery_lat'])
           : null,
       deliveryLng: json['deliveryLng'] != null || json['delivery_lng'] != null
-          ? (json['deliveryLng'] ?? json['delivery_lng']).toDouble()
+          ? _toDouble(json['deliveryLng'] ?? json['delivery_lng'])
           : null,
-      notes: json['notes'],
+      notes: json['notes']?.toString(),
       createdAt: json['createdAt'] != null || json['created_at'] != null
-          ? DateTime.parse(json['createdAt'] ?? json['created_at'])
+          ? DateTime.tryParse(json['createdAt']?.toString() ?? json['created_at']?.toString() ?? '') ?? DateTime.now()
           : DateTime.now(),
       completedAt: json['completedAt'] != null || json['completed_at'] != null
-          ? DateTime.parse(json['completedAt'] ?? json['completed_at'])
+          ? DateTime.tryParse((json['completedAt'] ?? json['completed_at']).toString())
           : null,
     );
   }
@@ -105,10 +120,10 @@ class ClientOrderItem {
   factory ClientOrderItem.fromJson(Map<String, dynamic> json) {
     return ClientOrderItem(
       productId: (json['productId'] ?? json['product_id'] ?? '').toString(),
-      productName: json['productName'] ?? json['product_name'] ?? '',
-      quantity: json['quantity'] ?? 0,
-      price: (json['price'] ?? 0).toDouble(),
-      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      productName: (json['productName'] ?? json['product_name'] ?? '').toString(),
+      quantity: ClientOrder._toInt(json['quantity']),
+      price: ClientOrder._toDouble(json['price']),
+      subtotal: ClientOrder._toDouble(json['subtotal']),
     );
   }
 

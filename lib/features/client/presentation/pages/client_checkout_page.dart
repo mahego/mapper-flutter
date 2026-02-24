@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
-import '../../../../core/widgets/glass_surface.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/navigation_service.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/geolocation_service.dart';
+import '../../../../core/services/google_places_service.dart';
 import '../../domain/repositories/client_order_repository.dart';
 import '../../domain/entities/client_order.dart';
 
@@ -26,19 +29,120 @@ class ClientCheckoutPage extends StatefulWidget {
 class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
   final _orderRepository = ClientOrderRepository();
   final _cartService = CartService();
+  final _apiClient = ApiClient();
+  final _geolocationService = GeolocationService();
+  late final GooglePlacesService _googlePlacesService;
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
   
   double _deliveryLat = 0.0;
   double _deliveryLng = 0.0;
   bool _isSubmitting = false;
+  bool _loadingLocation = false;
+  bool _loadingAddressSearch = false;
   String? _errorMessage;
+  GeoPlacesResult? _addressSuggestion;
+
+  @override
+  void initState() {
+    super.initState();
+    _googlePlacesService = GooglePlacesService(
+      dio: _apiClient.client,
+      apiKey: AppConstants.googlePlacesApiKey,
+    );
+  }
 
   @override
   void dispose() {
     _addressController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _loadingLocation = true;
+      _errorMessage = null;
+      _addressSuggestion = null;
+    });
+    try {
+      final enabled = await _geolocationService.isLocationServiceEnabled();
+      if (!enabled) {
+        if (mounted) setState(() {
+          _loadingLocation = false;
+          _errorMessage = 'Activa los servicios de ubicación en tu dispositivo.';
+        });
+        return;
+      }
+      final hasPermission = await _geolocationService.handlePermissions();
+      if (!hasPermission) {
+        if (mounted) setState(() {
+          _loadingLocation = false;
+          _errorMessage = 'Se necesitan permisos de ubicación para usar esta función.';
+        });
+        return;
+      }
+      final pos = await _geolocationService.getCurrentPosition();
+      if (pos == null) {
+        if (mounted) setState(() {
+          _loadingLocation = false;
+          _errorMessage = 'No se pudo obtener tu ubicación. Revisa GPS y permisos.';
+        });
+        return;
+      }
+      final result = await _googlePlacesService.reverseGeocode(pos.latitude, pos.longitude);
+      if (mounted) {
+        setState(() {
+          _addressController.text = result.address;
+          _deliveryLat = result.lat;
+          _deliveryLng = result.lng;
+          _loadingLocation = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _loadingLocation = false;
+        _errorMessage = 'Error al obtener la ubicación. Intenta de nuevo.';
+      });
+    }
+  }
+
+  Future<void> _searchAddress() async {
+    final query = _addressController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _errorMessage = 'Escribe una dirección para buscar.');
+      return;
+    }
+    setState(() {
+      _loadingAddressSearch = true;
+      _errorMessage = null;
+      _addressSuggestion = null;
+    });
+    try {
+      final result = await _googlePlacesService.searchAddress(query);
+      if (result.address.startsWith('Lat:')) {
+        if (mounted) setState(() {
+          _loadingAddressSearch = false;
+          _errorMessage = 'No se encontró la dirección. Prueba con más detalle.';
+        });
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _addressController.text = result.address;
+          _deliveryLat = result.lat;
+          _deliveryLng = result.lng;
+          _addressSuggestion = result;
+          _loadingAddressSearch = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _loadingAddressSearch = false;
+        _errorMessage = 'Error al buscar la dirección.';
+      });
+    }
   }
 
   double get _subtotal {
@@ -109,6 +213,8 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
           total: order.total,
           deliveryFee: order.deliveryFee ?? _deliveryFee,
           status: order.status,
+          deliveryLat: (_deliveryLat != 0 || _deliveryLng != 0) ? _deliveryLat : null,
+          deliveryLng: (_deliveryLat != 0 || _deliveryLng != 0) ? _deliveryLng : null,
         );
       }
     } catch (e) {
@@ -128,53 +234,33 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
     }
   }
 
+  static const _accent = Color(0xFF06b6d4);
+  static const _surface = Color(0xFF0f172a);
+  static const _surfaceLight = Color(0xFF1e293b);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _surface,
       body: LiquidGlassBackground(
         child: Stack(
           children: [
             SafeArea(
               child: Column(
                 children: [
-                  // Header
                   _buildHeader(),
-                  
-                  // Content
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Error message
-                          if (_errorMessage != null) ...[
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.red.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
-                          
-                          // Order Summary
+                          if (_errorMessage != null) _buildErrorBanner(),
+                          const SizedBox(height: 20),
                           _buildOrderSummary(),
-                          const SizedBox(height: 16),
-                          
-                          // Delivery Information
+                          const SizedBox(height: 20),
                           _buildDeliveryForm(),
-                          const SizedBox(height: 24),
-                          
-                          // Submit Button
+                          const SizedBox(height: 28),
                           _buildSubmitButton(),
                         ],
                       ),
@@ -183,17 +269,7 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
                 ],
               ),
             ),
-            
-            // Loading overlay
-            if (_isSubmitting)
-              Container(
-                color: Colors.black54,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF06b6d4)),
-                  ),
-                ),
-              ),
+            if (_isSubmitting) _buildLoadingOverlay(),
           ],
         ),
       ),
@@ -201,22 +277,50 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
   }
 
   Widget _buildHeader() {
-    return GlassSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      borderRadius: BorderRadius.zero,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1),
+        ),
+      ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
           const SizedBox(width: 8),
-          const Text(
-            'Finalizar Pedido',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Finalizar pedido',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.storeName,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.55),
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
@@ -224,131 +328,132 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
     );
   }
 
+  Widget _buildErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.red.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline_rounded, color: Colors.red.shade300, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(color: Colors.red.shade200, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    return Container(
+      color: Colors.black54,
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(_accent),
+          strokeWidth: 2.5,
+        ),
+      ),
+    );
+  }
+
   Widget _buildOrderSummary() {
-    return GlassSurface(
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceLight.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Resumen del Pedido',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: _accent, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Resumen del pedido',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Tienda: ${widget.storeName}',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Items list
+          const SizedBox(height: 14),
           ...widget.cart.entries.map((entry) {
             final item = entry.value;
             final name = item['name'] as String;
             final price = item['price'] as double;
             final quantity = item['quantity'] as int;
             final subtotal = price * quantity;
-            
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                ),
-              ),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$quantity u. × \$${price.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
+                  Text(
+                    '$quantity × \$${price.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     '\$${subtotal.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
             );
           }),
-          
-          // Totals
-          const Divider(color: Colors.white24, height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Subtotal:',
-                style: TextStyle(color: Colors.white.withOpacity(0.8)),
-              ),
-              Text(
-                '\$${_subtotal.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.white.withOpacity(0.8)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Envío:',
-                style: TextStyle(color: Colors.white.withOpacity(0.8)),
-              ),
-              Text(
-                '\$${_deliveryFee.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.white.withOpacity(0.8)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          Divider(height: 24, color: Colors.white.withOpacity(0.08)),
+          _buildSummaryRow('Subtotal', _subtotal),
+          const SizedBox(height: 6),
+          _buildSummaryRow('Envío', _deliveryFee),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Total:',
+                'Total',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               Text(
                 '\$${_total.toStringAsFixed(2)}',
                 style: const TextStyle(
-                  color: Color(0xFF06b6d4),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  color: _accent,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -358,100 +463,218 @@ class _ClientCheckoutPageState extends State<ClientCheckoutPage> {
     );
   }
 
-  Widget _buildDeliveryForm() {
-    return GlassSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Información de Entrega',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+  Widget _buildSummaryRow(String label, double value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.65),
+            fontSize: 13,
           ),
-          const SizedBox(height: 16),
-          
-          // Address field
+        ),
+        Text(
+          '\$${value.toStringAsFixed(2)}',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.85),
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryForm() {
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.06),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: _accent, width: 1.5),
+      ),
+      labelStyle: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+      hintStyle: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 14),
+      prefixIconColor: Colors.white.withOpacity(0.5),
+    );
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceLight.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_shipping_rounded, color: _accent, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Entrega',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           TextField(
             controller: _addressController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: inputDecoration.copyWith(
               labelText: 'Dirección de entrega *',
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-              hintText: 'Ingresa tu dirección completa',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF06b6d4), width: 2),
-              ),
-              prefixIcon: Icon(Icons.location_on, color: Colors.white.withOpacity(0.7)),
+              hintText: 'Calle, número, colonia, CP',
+              prefixIcon: const Icon(Icons.place_outlined, size: 20),
             ),
             maxLines: 2,
+            minLines: 1,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildActionChip(
+                icon: Icons.my_location_rounded,
+                label: _loadingLocation ? 'Obteniendo...' : 'Ubicación actual',
+                loading: _loadingLocation,
+                onTap: _useCurrentLocation,
+              ),
+              _buildActionChip(
+                icon: Icons.search_rounded,
+                label: _loadingAddressSearch ? 'Buscando...' : 'Buscar dirección',
+                loading: _loadingAddressSearch,
+                onTap: _searchAddress,
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          
-          // Notes field
           TextField(
             controller: _notesController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              labelText: 'Notas adicionales (opcional)',
-              labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-              hintText: 'Instrucciones de entrega, referencias, etc.',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.1),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF06b6d4), width: 2),
-              ),
-              prefixIcon: Icon(Icons.note, color: Colors.white.withOpacity(0.7)),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: inputDecoration.copyWith(
+              labelText: 'Notas (opcional)',
+              hintText: 'Instrucciones, referencias...',
+              prefixIcon: const Icon(Icons.note_add_outlined, size: 20),
             ),
             maxLines: 3,
+            minLines: 1,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSubmitButton() {
-    return ElevatedButton(
-      onPressed: _isSubmitting || !_isFormValid ? null : _submitOrder,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF06b6d4),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildActionChip({
+    required IconData icon,
+    required String label,
+    required bool loading,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: loading ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: _accent.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _accent.withOpacity(0.35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (loading)
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _accent,
+                  ),
+                )
+              else
+                Icon(icon, size: 18, color: _accent),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-        elevation: 0,
-        disabledBackgroundColor: Colors.white.withOpacity(0.2),
       ),
-      child: Text(
-        _isSubmitting ? 'Procesando pedido...' : 'Confirmar Pedido',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final enabled = !_isSubmitting && _isFormValid;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? _submitOrder : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: enabled ? _accent : Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: _accent.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_isSubmitting)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              else
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                _isSubmitting ? 'Procesando...' : 'Confirmar pedido',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

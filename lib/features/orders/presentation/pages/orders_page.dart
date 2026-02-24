@@ -384,13 +384,13 @@ class _OrdersPageState extends State<OrdersPage> {
             context.go('/dashboard/cliente');
             break;
           case 1:
-            context.go('/solicitudes');
+            context.go('/dashboard/cliente', extra: {'tab': 1});
             break;
           case 2:
-            context.go('/tracking');
+            context.go('/dashboard/cliente', extra: {'tab': 2});
             break;
           case 3:
-            context.go('/perfil');
+            context.go('/profile');
             break;
         }
       },

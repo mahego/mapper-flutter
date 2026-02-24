@@ -61,7 +61,7 @@ class _RequestTrackingPageState extends State<RequestTrackingPage> {
               AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
+                  onPressed: () => context.go('/dashboard/cliente', extra: {'tab': 1}),
                 ),
                 title: const Text('Tracking', style: TextStyle(color: Colors.white)),
                 backgroundColor: Colors.transparent,

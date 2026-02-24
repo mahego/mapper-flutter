@@ -86,25 +86,26 @@ class NotificationService {
     }
   }
 
-  /// Obtener cantidad de notificaciones sin leer
+  /// Obtener cantidad de notificaciones sin leer.
+  /// Si el backend no expone este endpoint (404), se devuelve 0 sin lanzar.
   Future<int> getUnreadCount() async {
     try {
       final response = await _apiClient.client.get(
         '/notifications/unread/count',
+        options: Options(validateStatus: (status) => status != null && status! < 500),
       );
 
       if (response.statusCode == 200) {
-        return response.data['count'] as int? ?? 0;
+        final data = response.data;
+        if (data is Map) {
+          final c = data['count'];
+          if (c is int) return c;
+          final u = data['unreadCount'];
+          if (u is int) return u;
+        }
       }
       return 0;
-    } on DioException catch (e) {
-      // 401 es esperado si el usuario no está autenticado
-      if (e.response?.statusCode != 401) {
-        print('Error fetching unread count: $e');
-      }
-      return 0;
-    } catch (e) {
-      print('Error fetching unread count: $e');
+    } catch (_) {
       return 0;
     }
   }

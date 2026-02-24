@@ -95,27 +95,33 @@ class AuthService {
     return _storage.getUserRole();
   }
 
-  // Refresh token
-  Future<bool> refreshToken() async {
-    final refreshToken = _storage.getRefreshToken();
-    if (refreshToken == null) {
-      return false;
+  /// Intenta refrescar el access token con el refresh token.
+  /// Devuelve el nuevo access token o null si falla (no limpia sesión; el interceptor lo hace).
+  Future<String?> tryRefreshAccessToken() async {
+    final refreshTokenValue = await _storage.getRefreshTokenAsync();
+    if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
+      return null;
     }
 
     try {
-      final newToken = await _repository.refreshToken(refreshToken);
-      await _storage.saveToken(newToken);
-      
-      // Update API client token
-      if (_apiClient != null) {
-        _apiClient!.updateToken(newToken);
+      final response = await _repository.refreshToken(refreshTokenValue);
+      await _storage.saveToken(response.token);
+      if (response.refreshToken != null) {
+        await _storage.saveRefreshToken(response.refreshToken!);
       }
-      
-      return true;
-    } catch (e) {
-      await _clearAuthData();
-      return false;
+      if (_apiClient != null) {
+        _apiClient!.updateToken(response.token);
+      }
+      return response.token;
+    } catch (_) {
+      return null;
     }
+  }
+
+  /// Refresca el token (uso manual, p. ej. al reabrir la app). Limpia sesión si falla.
+  Future<bool> refreshToken() async {
+    final newToken = await tryRefreshAccessToken();
+    return newToken != null;
   }
 
   // Forgot password

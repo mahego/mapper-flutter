@@ -124,12 +124,16 @@ class AppRouter {
               body: Center(child: Text('Error: datos de orden no disponibles')),
             );
           }
+          final deliveryLat = extra['deliveryLat'] is num ? (extra['deliveryLat'] as num).toDouble() : null;
+          final deliveryLng = extra['deliveryLng'] is num ? (extra['deliveryLng'] as num).toDouble() : null;
           return OrderConfirmationPage(
             orderId: extra['orderId'] as String,
             storeName: extra['storeName'] as String,
             total: extra['total'] as double,
             deliveryFee: extra['deliveryFee'] as double,
             status: extra['status'] as String,
+            deliveryLat: deliveryLat,
+            deliveryLng: deliveryLng,
           );
         },
       ),

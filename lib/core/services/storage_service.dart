@@ -10,10 +10,12 @@ class StorageService {
   SharedPreferences? _prefs;
   static const _secureStorage = FlutterSecureStorage();
   String? _cachedToken;
+  String? _cachedRefreshToken;
 
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
     _cachedToken = await _secureStorage.read(key: AppConfig.tokenKey);
+    _cachedRefreshToken = await _secureStorage.read(key: AppConfig.refreshTokenKey);
   }
 
   SharedPreferences get prefs {
@@ -49,19 +51,23 @@ class StorageService {
   // Refresh Token
   Future<bool> saveRefreshToken(String token) async {
     await _secureStorage.write(key: AppConfig.refreshTokenKey, value: token);
+    _cachedRefreshToken = token;
     return true;
   }
 
   Future<String?> getRefreshTokenAsync() async {
-    return await _secureStorage.read(key: AppConfig.refreshTokenKey);
+    if (_cachedRefreshToken != null) return _cachedRefreshToken;
+    _cachedRefreshToken = await _secureStorage.read(key: AppConfig.refreshTokenKey);
+    return _cachedRefreshToken;
   }
 
   String? getRefreshToken() {
-    return null;
+    return _cachedRefreshToken;
   }
 
   Future<bool> removeRefreshToken() async {
     await _secureStorage.delete(key: AppConfig.refreshTokenKey);
+    _cachedRefreshToken = null;
     return true;
   }
 
@@ -93,6 +99,7 @@ class StorageService {
   // Clear All Data
   Future<bool> clearAll() async {
     _cachedToken = null;
+    _cachedRefreshToken = null;
     await _secureStorage.delete(key: AppConfig.tokenKey);
     await _secureStorage.delete(key: AppConfig.refreshTokenKey);
     return await prefs.clear();

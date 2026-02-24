@@ -59,8 +59,15 @@ class _StoreDashboardPageState extends State<StoreDashboardPage> {
         children: [
           LiquidGlassBackground(
             child: SafeArea(
-              child: CustomScrollView(
-                slivers: [
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await _loadNotificationCount();
+                },
+                color: const Color(0xFF06b6d4),
+                backgroundColor: Colors.white24,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
                   // Header
                   SliverAppBar(
                     backgroundColor: Colors.transparent,
@@ -403,7 +410,8 @@ class _StoreDashboardPageState extends State<StoreDashboardPage> {
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

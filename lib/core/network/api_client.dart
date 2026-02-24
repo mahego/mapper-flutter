@@ -19,6 +19,17 @@ class ApiClient {
   /// Callback when 401 is received (e.g. redirect to login). Set from main.
   static void Function()? onUnauthorized;
 
+  /// Callback to try refresh token; return new access token or null. Set from main.
+  static Future<String?> Function()? onTryRefreshToken;
+
+  static bool _isRefreshing = false;
+
+  static Future<void> _clearAuthAndNotify() async {
+    await StorageService().removeToken();
+    await StorageService().removeRefreshToken();
+    onUnauthorized?.call();
+  }
+
   ApiClient({Dio? dio, Logger? logger}) 
       : _dio = dio ?? Dio(BaseOptions(
           baseUrl: AppConstants.baseUrl,
@@ -30,12 +41,15 @@ class ApiClient {
     
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await StorageService().getTokenAsync();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-          _logger.d('🔐 Token añadido: ${token.substring(0, 20)}...');
-        } else {
-          _logger.w('⚠️ No hay token de autenticación disponible');
+        final skipAuth = options.extra['skip_auth'] == true;
+        if (!skipAuth) {
+          final token = await StorageService().getTokenAsync();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+            _logger.d('🔐 Token añadido: ${token.substring(0, 20)}...');
+          } else {
+            _logger.w('⚠️ No hay token de autenticación disponible');
+          }
         }
         _logger.d('REQUEST[${options.method}] => PATH: ${options.path}');
         return handler.next(options);
@@ -47,18 +61,57 @@ class ApiClient {
       onError: (DioException e, handler) async {
         final statusCode = e.response?.statusCode;
         final path = e.requestOptions.path;
-        
+
         if (statusCode == 401) {
-          _logger.w('⚠️ UNAUTHORIZED[401] => PATH: $path (auth required)');
-          await StorageService().removeToken();
-          onUnauthorized?.call();
-          final message = 'Tu sesión ha expirado. Inicia sesión nuevamente.';
+          final isRefreshRequest = path.contains('refresh');
+          if (isRefreshRequest) {
+            _logger.w('⚠️ Refresh falló (401) => cerrando sesión');
+            await _clearAuthAndNotify();
+            return handler.reject(DioException(
+              requestOptions: e.requestOptions,
+              response: e.response,
+              type: e.type,
+              error: UnauthorizedException('Tu sesión ha expirado. Inicia sesión nuevamente.'),
+              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+            ));
+          }
+
+          if (_isRefreshing) {
+            _logger.w('⚠️ 401 durante refresh => cerrando sesión');
+            await _clearAuthAndNotify();
+            return handler.reject(DioException(
+              requestOptions: e.requestOptions,
+              response: e.response,
+              type: e.type,
+              error: UnauthorizedException('Tu sesión ha expirado. Inicia sesión nuevamente.'),
+              message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
+            ));
+          }
+
+          _isRefreshing = true;
+          try {
+            final newToken = await onTryRefreshToken?.call();
+            if (newToken != null && newToken.isNotEmpty) {
+              _logger.i('✅ Token refrescado; reintentando request');
+              updateToken(newToken);
+              e.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+              final response = await _dio.fetch(e.requestOptions);
+              return handler.resolve(response);
+            }
+          } catch (_) {
+            _logger.w('⚠️ Error al refrescar token');
+          } finally {
+            _isRefreshing = false;
+          }
+
+          _logger.w('⚠️ UNAUTHORIZED[401] => PATH: $path (sin refresh posible)');
+          await _clearAuthAndNotify();
           return handler.reject(DioException(
             requestOptions: e.requestOptions,
             response: e.response,
             type: e.type,
-            error: UnauthorizedException(message),
-            message: message,
+            error: UnauthorizedException('Tu sesión ha expirado. Inicia sesión nuevamente.'),
+            message: 'Tu sesión ha expirado. Inicia sesión nuevamente.',
           ));
         }
         _logger.e('⛔ ERROR[$statusCode] => PATH: $path', error: e.error, stackTrace: e.stackTrace);

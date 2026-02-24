@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
-import '../../../../core/widgets/glass_surface.dart';
+import '../../../../core/widgets/static_map_image.dart';
 
 class OrderConfirmationPage extends StatelessWidget {
+  static const _accent = Color(0xFF06b6d4);
+  static const _surfaceLight = Color(0xFF1e293b);
   final String orderId;
   final String storeName;
   final double total;
   final double deliveryFee;
   final String status;
+  final double? deliveryLat;
+  final double? deliveryLng;
 
   const OrderConfirmationPage({
     super.key,
@@ -17,159 +21,38 @@ class OrderConfirmationPage extends StatelessWidget {
     required this.total,
     required this.deliveryFee,
     required this.status,
+    this.deliveryLat,
+    this.deliveryLng,
   });
 
   @override
   Widget build(BuildContext context) {
+    const horizontalPadding = 20.0;
+    final padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 24);
+    final maxWidth = MediaQuery.sizeOf(context).width - (horizontalPadding * 2);
+    final mapHeight = (maxWidth * 0.5).clamp(160.0, 220.0);
+
     return Scaffold(
       body: LiquidGlassBackground(
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               _buildHeader(context),
-              
-              // Content
               Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Success Icon
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF10b981).withOpacity(0.3),
-                                const Color(0xFF059669).withOpacity(0.3),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: const Color(0xFF10b981).withOpacity(0.5),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.check_circle_outline,
-                            size: 60,
-                            color: Color(0xFF10b981),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Success message
-                        const Text(
-                          '¡Pedido Creado Exitosamente!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        
-                        // Order details card
-                        GlassSurface(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Detalles del Pedido',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              _buildDetailRow('Número de Orden:', '#$orderId'),
-                              const SizedBox(height: 12),
-                              _buildDetailRow('Tienda:', storeName),
-                              const SizedBox(height: 12),
-                              _buildDetailRow('Total:', '\$${total.toStringAsFixed(2)}'),
-                              const SizedBox(height: 12),
-                              _buildDetailRow('Envío:', '\$${deliveryFee.toStringAsFixed(2)}'),
-                              const SizedBox(height: 12),
-                              _buildDetailRow('Estado:', _getStatusText(status), statusColor: _getStatusColor(status)),
-                              
-                              const SizedBox(height: 20),
-                              const Divider(color: Colors.white24),
-                              const SizedBox(height: 12),
-                              
-                              Text(
-                                'Tu pedido ha sido enviado a la tienda para su preparación. Podrás seguir el estado en tiempo real desde la sección "Mis Pedidos".',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        
-                        // Action buttons
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            ElevatedButton(
-                              onPressed: () {
-                                // Navigate to orders/requests page
-                                context.go('/dashboard/cliente', extra: {'tab': 1});
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF06b6d4),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Ver Mis Pedidos',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            OutlinedButton(
-                              onPressed: () {
-                                // Navigate to client dashboard
-                                context.go('/client/dashboard');
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: BorderSide(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Volver al Inicio',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                child: SingleChildScrollView(
+                  padding: padding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      _buildSuccessHeader(),
+                      const SizedBox(height: 28),
+                      _buildMapCard(context, maxWidth, mapHeight),
+                      const SizedBox(height: 20),
+                      _buildOrderDetailsCard(),
+                      const SizedBox(height: 28),
+                      _buildActions(context),
+                    ],
                   ),
                 ),
               ),
@@ -180,23 +63,226 @@ class OrderConfirmationPage extends StatelessWidget {
     );
   }
 
+  Widget _buildSuccessHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 88,
+          height: 88,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF10b981).withOpacity(0.25),
+                const Color(0xFF059669).withOpacity(0.25),
+              ],
+            ),
+            border: Border.all(
+              color: const Color(0xFF10b981).withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 52,
+            color: Color(0xFF10b981),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          '¡Pedido creado!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Te notificaremos cuando esté en camino',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.75),
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapCard(BuildContext context, double width, double height) {
+    final hasLocation = deliveryLat != null && deliveryLng != null;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceLight.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: _accent, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Ubicación de entrega',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (hasLocation)
+            StaticMapImage(
+              lat: deliveryLat!,
+              lng: deliveryLng!,
+              width: width,
+              height: height,
+              borderRadius: BorderRadius.circular(10),
+            )
+          else
+            Container(
+              width: width,
+              height: height,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.location_off_outlined, color: Colors.white38, size: 40),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No se especificó ubicación',
+                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderDetailsCard() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _surfaceLight.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.receipt_long_rounded, color: _accent, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Detalles del pedido',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildDetailRow('Número de orden', '#$orderId'),
+          const SizedBox(height: 10),
+          _buildDetailRow('Tienda', storeName),
+          const SizedBox(height: 10),
+          _buildDetailRow('Total', '\$${total.toStringAsFixed(2)}'),
+          const SizedBox(height: 10),
+          _buildDetailRow('Envío', '\$${deliveryFee.toStringAsFixed(2)}'),
+          const SizedBox(height: 10),
+          _buildDetailRow('Estado', _getStatusText(status), statusColor: _getStatusColor(status)),
+          const SizedBox(height: 14),
+          Divider(height: 24, color: Colors.white.withOpacity(0.08)),
+          const SizedBox(height: 10),
+          Text(
+            'Tu pedido fue enviado a la tienda. Puedes seguir el estado en "Mis pedidos".',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.65),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton(
+          onPressed: () => context.go('/dashboard/cliente', extra: {'tab': 1}),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF06b6d4),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text('Ver mis pedidos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: () => context.go('/dashboard/cliente'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            side: BorderSide(color: Colors.white.withOpacity(0.3), width: 1.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Volver al inicio', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
-    return GlassSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      borderRadius: BorderRadius.zero,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1),
+        ),
+      ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => context.go('/client/dashboard'),
+            onPressed: () => context.go('/dashboard/cliente'),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
           const SizedBox(width: 8),
           const Text(
             'Confirmación',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

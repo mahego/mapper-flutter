@@ -80,6 +80,8 @@ class NavigationService {
     required double total,
     required double deliveryFee,
     required String status,
+    double? deliveryLat,
+    double? deliveryLng,
   }) {
     context.go(
       '/client/order-confirmation',
@@ -89,6 +91,8 @@ class NavigationService {
         'total': total,
         'deliveryFee': deliveryFee,
         'status': status,
+        if (deliveryLat != null) 'deliveryLat': deliveryLat,
+        if (deliveryLng != null) 'deliveryLng': deliveryLng,
       },
     );
   }

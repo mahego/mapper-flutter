@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:logger/logger.dart';
 import '../constants/app_constants.dart';
 
@@ -60,23 +61,26 @@ class GooglePlacesService {
       return GeoPlacesResult.fallback(lat, lng);
     }
 
-    // Validar API key
-    if (_apiKey.isEmpty) {
+    // En web usamos proxy del backend (evita CORS); en móvil llamamos a Google directamente
+    if (!kIsWeb && _apiKey.isEmpty) {
       _logger.w('⚠️ Google API key no configurada');
       return GeoPlacesResult.fallback(lat, lng);
     }
 
     try {
-      _logger.d('📡 Llamando a Google Geocoding API: $lat,$lng');
+      final useProxy = kIsWeb;
+      _logger.d(useProxy ? '📡 Llamando proxy geocode/reverse' : '📡 Llamando a Google Geocoding API: $lat,$lng');
 
       final response = await _dio.get<Map<String, dynamic>>(
-        _geocodingApiUrl,
-        queryParameters: {
-          'latlng': '$lat,$lng',
-          'key': _apiKey,
-          'language': 'es',
-          'region': 'mx', // Priorizar resultados de México
-        },
+        useProxy ? '/geocode/reverse' : _geocodingApiUrl,
+        queryParameters: useProxy
+            ? {'lat': lat.toString(), 'lng': lng.toString(), 'language': 'es', 'region': 'mx'}
+            : {
+                'latlng': '$lat,$lng',
+                'key': _apiKey,
+                'language': 'es',
+                'region': 'mx',
+              },
       );
 
       _logger.d('📊 Status: ${response.statusCode}');
@@ -135,21 +139,24 @@ class GooglePlacesService {
       return GeoPlacesResult.fallback(0, 0);
     }
 
-    if (_apiKey.isEmpty) {
+    if (!kIsWeb && _apiKey.isEmpty) {
       _logger.w('⚠️ Google API key no configurada');
       return GeoPlacesResult.fallback(0, 0);
     }
 
     try {
+      final useProxy = kIsWeb;
       final response = await _dio.get<Map<String, dynamic>>(
-        _geocodingApiUrl,
-        queryParameters: {
-          'address': query,
-          'key': _apiKey,
-          'language': 'es',
-          'region': 'mx',
-          'components': 'country:mx', // Limitar a México
-        },
+        useProxy ? '/geocode' : _geocodingApiUrl,
+        queryParameters: useProxy
+            ? {'address': query, 'language': 'es', 'region': 'mx'}
+            : {
+                'address': query,
+                'key': _apiKey,
+                'language': 'es',
+                'region': 'mx',
+                'components': 'country:mx',
+              },
       );
 
       if (response.statusCode != 200) {

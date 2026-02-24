@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../../../core/widgets/notifications_panel.dart';
 import '../../../../core/widgets/liquid_glass_snackbar.dart';
+import '../../../../core/widgets/liquid_glass_modal.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/navigation_service.dart';
@@ -1606,15 +1607,50 @@ class _ClientCatalogPageState extends State<ClientCatalogPage> {
     );
   }
 
+  /// Valida stock actual antes de ir a pagar (re-consulta productos). Si algo supera stock, avisa y no navega.
+  Future<List<String>> _validateStockBeforeCheckout() async {
+    try {
+      final res = await _apiClient.get(ApiEndpoints.storeProductsList(widget.storeId));
+      final data = res.data;
+      final list = data is Map ? (data['data'] ?? data) : (data is List ? data : <dynamic>[]);
+      final products = list is List ? list : <dynamic>[];
+      final over = <String>[];
+      for (final entry in _cart.entries) {
+        final productId = entry.key;
+        final qty = entry.value['quantity'] as int;
+        final productList = products.where((p) => p is Map && p['id']?.toString() == productId).toList();
+        if (productList.isEmpty) continue;
+        final p = productList.first as Map<String, dynamic>;
+        final stock = _stockFromProduct(p);
+        if (qty > stock) {
+          over.add('${entry.value['name']}: pediste $qty, hay $stock disponibles');
+        }
+      }
+      return over;
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<void> _checkoutCart() async {
     if (_cart.isEmpty) {
       LiquidGlassSnackBar.showWarning(context, 'El carrito está vacío');
       return;
     }
 
+    final overStock = await _validateStockBeforeCheckout();
+    if (overStock.isNotEmpty && mounted) {
+      LiquidGlassModalShow.warning(
+        context,
+        title: 'Stock insuficiente',
+        message: 'Algunos productos ya no tienen el stock que tenías en el carrito:\n\n${overStock.join('\n')}\n\nAjusta las cantidades en el carrito o quita los productos y vuelve a intentar.',
+        confirmLabel: 'Entendido',
+      );
+      return;
+    }
+
     String storeName = _store?['name']?.toString() ?? 'Tienda';
 
-    // Navigate to checkout page using NavigationService
     navigationService.goToClientCheckout(
       context,
       widget.storeId,

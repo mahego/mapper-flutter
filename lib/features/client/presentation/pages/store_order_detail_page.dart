@@ -25,6 +25,14 @@ class _StoreOrderDetailPageState extends State<StoreOrderDetailPage> {
   bool _loading = true;
   String? _error;
 
+  static String _formatDateSafe(DateTime d, String pattern) {
+    try {
+      return DateFormat(pattern, 'es').format(d);
+    } catch (_) {
+      return DateFormat(pattern).format(d);
+    }
+  }
+
   static final _statusLabels = {
     'pending': 'Pendiente',
     'confirmed': 'Confirmado',
@@ -131,7 +139,7 @@ class _StoreOrderDetailPageState extends State<StoreOrderDetailPage> {
 
   Widget _buildStatusCard(NumberFormat formatter) {
     final statusLabel = _statusLabels[_order!.status] ?? _order!.status;
-    final created = DateFormat('d MMM y, HH:mm', 'es').format(_order!.createdAt);
+    final created = _formatDateSafe(_order!.createdAt, 'd MMM y, HH:mm');
 
     return Container(
       padding: const EdgeInsets.all(16),

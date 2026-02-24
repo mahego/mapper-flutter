@@ -50,7 +50,9 @@ class SocialLoginButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.center,
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Icon
@@ -94,18 +96,19 @@ class SocialLoginButton extends StatelessWidget {
     return Container(
       width: 24,
       height: 24,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+      child: Text(
+        'G',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: const Color(0xFF1F2937),
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          height: 1.0,
         ),
       ),
     );
@@ -115,18 +118,19 @@ class SocialLoginButton extends StatelessWidget {
     return Container(
       width: 24,
       height: 24,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: const Color(0xFF1877F2),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: const Center(
-        child: Text(
-          'f',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+      child: Text(
+        'f',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          height: 1.0,
         ),
       ),
     );

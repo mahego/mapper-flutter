@@ -12,7 +12,7 @@ abstract class AuthRepository {
     String? phone,
   });
   Future<void> logout();
-  Future<String> refreshToken(String refreshToken);
+  Future<AuthResponse> refreshToken(String refreshToken);
   Future<User> getCurrentUser();
   Future<void> forgotPassword(String email);
   Future<void> resetPassword(String token, String newPassword);

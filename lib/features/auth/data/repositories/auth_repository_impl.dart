@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
@@ -101,18 +102,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<String> refreshToken(String refreshToken) async {
+  Future<AuthResponse> refreshToken(String refreshToken) async {
     try {
-      final response = await apiClient.post(
+      // skip_auth: no enviar Bearer expirado; el backend solo usa body.refreshToken
+      final response = await apiClient.client.post(
         ApiEndpoints.refreshToken,
         data: {'refreshToken': refreshToken},
+        options: Options(extra: {'skip_auth': true}),
       );
-      
-      // Backend returns { success: true, data: { token, ... } }
-      final responseData = response.data;
-      final actualData = responseData['data'] ?? responseData;
-      
-      return actualData['token'] as String;
+      final responseData = response.data as Map<String, dynamic>?;
+      final actualData = responseData?['data'] ?? responseData ?? {};
+      return AuthResponse.fromJson(actualData as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Error al refrescar token: $e');
     }

@@ -30,6 +30,11 @@ class ServiceRequest {
   final String? notes;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? cancelReason;
+  final int? estimatedDurationMinutes;
+  final String? completionNotes;
+  final String? providerPhone;
+  final double? providerRating;
 
   const ServiceRequest({
     required this.id,
@@ -51,6 +56,11 @@ class ServiceRequest {
     this.notes,
     required this.createdAt,
     this.updatedAt,
+    this.cancelReason,
+    this.estimatedDurationMinutes,
+    this.completionNotes,
+    this.providerPhone,
+    this.providerRating,
   });
 
   factory ServiceRequest.fromJson(Map<String, dynamic> json) {
@@ -71,11 +81,16 @@ class ServiceRequest {
       finalCost: _toDoubleOrNull(json['finalPrice'] ?? json['finalCost'] ?? json['final_cost'] ?? json['final_price']),
       pickupTime: json['pickupTime'] ?? json['pickup_time'] ?? json['startedAt'] ?? json['started_at'],
       deliveryTime: json['deliveryTime'] ?? json['delivery_time'] ?? json['completedAt'] ?? json['completed_at'],
-      notes: json['notes'] ?? json['description'],
+      notes: json['notes'] ?? json['description'] ?? json['request_notes'] ?? json['requestNotes'],
       createdAt: DateTime.parse(json['createdAt'] ?? json['created_at'] ?? DateTime.now().toIso8601String()),
       updatedAt: json['updatedAt'] != null || json['updated_at'] != null
           ? DateTime.parse(json['updatedAt'] ?? json['updated_at'])
           : null,
+      cancelReason: json['cancelReason'] ?? json['cancel_reason'],
+      estimatedDurationMinutes: json['estimatedDuration'] != null ? int.tryParse(json['estimatedDuration'].toString()) : null,
+      completionNotes: json['completionNotes'] ?? json['completion_notes'],
+      providerPhone: json['provider'] is Map ? (json['provider'] as Map)['phoneNumber']?.toString() : null,
+      providerRating: json['provider'] is Map ? _toDoubleOrNull((json['provider'] as Map)['rating']) : null,
     );
   }
 
@@ -100,6 +115,11 @@ class ServiceRequest {
       'notes': notes,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'cancelReason': cancelReason,
+      'estimatedDurationMinutes': estimatedDurationMinutes,
+      'completionNotes': completionNotes,
+      'providerPhone': providerPhone,
+      'providerRating': providerRating,
     };
   }
 
@@ -107,6 +127,10 @@ class ServiceRequest {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'Pendiente';
+      case 'rejected':
+        return 'Rechazada';
+      case 'accepted':
+        return 'Aceptada';
       case 'negotiating':
         return 'Negociando';
       case 'assigned':
@@ -114,9 +138,9 @@ class ServiceRequest {
       case 'in_progress':
         return 'En progreso';
       case 'completed':
-        return 'Completado';
+        return 'Completada';
       case 'cancelled':
-        return 'Cancelado';
+        return 'Cancelada';
       default:
         return status;
     }

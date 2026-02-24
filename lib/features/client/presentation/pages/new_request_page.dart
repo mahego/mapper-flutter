@@ -326,6 +326,14 @@ class _NewRequestPageState extends State<NewRequestPage> {
           }
           _error = '';
         });
+        if (displayAddress.startsWith('Lat:') && AppConstants.googlePlacesApiKey.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Configura GOOGLE_PLACES_API_KEY en .env para ver la dirección completa.'),
+              backgroundColor: Color(0xFF06b6d4),
+            ),
+          );
+        }
       }
     } catch (e, stackTrace) {
       print('❌ Error obteniendo ubicación: $e');
@@ -359,6 +367,14 @@ class _NewRequestPageState extends State<NewRequestPage> {
 
   Future<void> _geocodeDestination() async {
     final query = _destinationController.text.trim();
+    
+    if (AppConstants.googlePlacesApiKey.isEmpty) {
+      setState(() {
+        _error = 'La búsqueda de direcciones no está configurada (falta GOOGLE_PLACES_API_KEY en .env).';
+        _destinationError = 'No se puede buscar dirección. Configura la API key.';
+      });
+      return;
+    }
     
     // Validate destination address
     final destinationError = InputValidators.validateAddress(query);
@@ -1231,7 +1247,20 @@ class _NewRequestPageState extends State<NewRequestPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              
+            if (_destinationController.text.trim().isNotEmpty && (_destLat == null || _destLng == null)) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _loadingDest ? null : _geocodeDestination,
+                icon: _loadingDest
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF06b6d4)))
+                    : const Icon(Icons.search, size: 18),
+                label: Text(_loadingDest ? 'Buscando...' : 'Buscar esta dirección'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF06b6d4),
+                  side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             
             // NOTES

@@ -21,13 +21,17 @@ class ClientOrderRepository {
       final response = await _apiClient.post(
         '/stores/$storeId/orders',
         data: {
-          'items': items.map((item) => {
-            'productId': item['productId'],
-            'quantity': item['quantity'],
+          'items': items.map((item) {
+            final q = item['quantity'];
+            final quantity = q is int ? q : (q is num ? q.toInt() : (int.tryParse(q?.toString() ?? '') ?? 0));
+            return {
+              'productId': item['productId']?.toString(),
+              'quantity': quantity,
+            };
           }).toList(),
           'deliveryAddress': deliveryAddress,
-          'deliveryLat': deliveryLat,
-          'deliveryLng': deliveryLng,
+          'deliveryLat': deliveryLat is int ? deliveryLat.toDouble() : deliveryLat,
+          'deliveryLng': deliveryLng is int ? deliveryLng.toDouble() : deliveryLng,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       );
