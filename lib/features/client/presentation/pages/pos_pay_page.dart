@@ -95,7 +95,7 @@ class _PosPayPageState extends State<PosPayPage> {
     if (_chargePesos == null || _chargePesos! <= 0) return;
 
     if (_checkoutUrl != null && _checkoutUrl!.isNotEmpty) {
-      await _openConektaCheckout();
+      await _openStripeCheckout();
       return;
     }
 
@@ -123,7 +123,7 @@ class _PosPayPageState extends State<PosPayPage> {
     }
   }
 
-  Future<void> _openConektaCheckout() async {
+  Future<void> _openStripeCheckout() async {
     final url = _checkoutUrl;
     if (url == null || url.isEmpty) return;
     setState(() => _paying = true);
