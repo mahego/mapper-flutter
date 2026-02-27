@@ -4,7 +4,7 @@ import '../constants/app_constants.dart';
 import '../services/storage_service.dart';
 
 /// Opción para no enviar Authorization (ej. GET sesión de pago QR es público).
-const _skipAuth = Options(extra: {'skip_auth': true});
+final _skipAuth = Options(extra: {'skip_auth': true});
 
 // Custom exception for unauthorized errors
 class UnauthorizedException implements Exception {
